@@ -8,3 +8,7 @@ class Character:
     
     def draw(self, screen):
         pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
+
+    def movement(self, dx, dy):
+        self.shape.x += dx
+        self.shape.y += dy
