@@ -1,8 +1,11 @@
 import pygame 
 import constants
 from character import Character
+import requests
+import json
+import api
 
-pygame.init()
+api.api_request()
 
 
 screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
