@@ -46,3 +46,10 @@ class Mapa:
                     self.tile_size
                 )
                 pygame.draw.rect(screen, color, rect)
+    def is_blocked(self, tile_x, tile_y):
+        # fuera del mapa
+        if tile_x < 0 or tile_x >= self.width or tile_y < 0 or tile_y >= self.height:
+            return True
+        tile = self.tiles[tile_y][tile_x]
+        info = self.legend.get(tile, {})
+        return info.get("blocked", False)
