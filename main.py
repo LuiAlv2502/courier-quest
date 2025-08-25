@@ -4,10 +4,14 @@ from character import Character
 import requests
 import json
 import api
+from mapa import Mapa
 
 api.api_request()
+mapa = Mapa("json_files/city_map.json", tile_size=20)
 
 
+
+#screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
 screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
 pygame.display.set_caption("Courier Quest")
 #define variables of movement of the character
@@ -24,7 +28,7 @@ run = True
 while run:
     #control frame rate
     clock.tick(constants.FPS)
-    screen.fill(constants.COLOR_BACKGROUND)
+    #screen.fill(constants.COLOR_BACKGROUND)
 
     #calculate the movement of the player
     delta_x = 0
@@ -41,7 +45,7 @@ while run:
     #move character
     character.movement(delta_x, delta_y)
 
-    character.draw(screen)
+    #character.draw(screen)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -64,7 +68,9 @@ while run:
                 move_up = False
             if event.key == pygame.K_DOWN:
                 move_down = False
-
+    screen.fill((0, 0, 0))
+    mapa.dibujar(screen)
+    character.draw(screen)
     pygame.display.update()
     pygame.display.flip()
 
