@@ -5,7 +5,7 @@ import sys
 import constants
 
 class Mapa:
-    def __init__(self, archivo_json, tile_size=20):
+    def __init__(self, archivo_json, tile_size):
         self.tile_size = tile_size
         self.tiles = []
         self.legend = {}
