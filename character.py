@@ -9,7 +9,7 @@ class Character:
         self.tile_y = tile_y
         self.reputacion = 100
         self.tile_size = tile_size
-        self.resistencia = 10
+        self.resistencia = 100
         self.peso_total = 0
         self.shape = pygame.Rect(
             tile_x * tile_size,
