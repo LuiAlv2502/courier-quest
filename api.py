@@ -13,7 +13,6 @@ def api_request():
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            # Guarda el JSON en un archivo con el nombre adecuado
             with open(f"json_files/{name}.json", "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
             print(f"Archivo guardado: {name}.json")
