@@ -1,12 +1,9 @@
-from numpy import character
 import pygame 
 import constants
 from character import Character
-import requests
-import json
 import api
 from mapa import Mapa
-import mapa
+from hud import draw_hud
 
 
 def main():
@@ -56,6 +53,7 @@ def main():
         screen.fill((0, 0, 0))
         mapa.dibujar(screen)
         character.draw(screen)
+        draw_hud(screen, character)
         pygame.display.flip()
 
     pygame.quit()

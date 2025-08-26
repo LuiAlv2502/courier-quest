@@ -5,12 +5,13 @@ import sys
 import constants
 
 class Mapa:
-    def __init__(self, archivo_json, tile_size):
+    def __init__(self, archivo_json, tile_size, hud_height = 50):
         self.tile_size = tile_size
         self.tiles = []
         self.legend = {}
         self.width = 0
         self.height = 0
+
 
         # Colores por defecto
         self.colors = {
@@ -46,6 +47,7 @@ class Mapa:
                     self.tile_size
                 )
                 pygame.draw.rect(screen, color, rect)
+
     def is_blocked(self, tile_x, tile_y):
         # fuera del mapa
         if tile_x < 0 or tile_x >= self.width or tile_y < 0 or tile_y >= self.height:
