@@ -1,3 +1,4 @@
+from numpy import character
 import pygame 
 import constants
 from character import Character
@@ -5,6 +6,7 @@ import requests
 import json
 import api
 from mapa import Mapa
+import mapa
 
 
 def main():
@@ -31,24 +33,29 @@ def main():
 
         #calculate the movement of the player
         #character.draw(screen)
-
+        #añadir si no se presiona ningun boton
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    character.movement(-1, 0, mapa)
-                elif event.key == pygame.K_RIGHT:
-                    character.movement(1, 0, mapa)
-                elif event.key == pygame.K_UP:
-                    character.movement(0, -1, mapa)
-                if event.key == pygame.K_DOWN:
-                    character.movement(0, 1, mapa)
+                if character.resistencia > 0:
+                    if event.key == pygame.K_LEFT:
+                        character.movement(-1, 0, mapa)
+                    elif event.key == pygame.K_RIGHT:
+                        character.movement(1, 0, mapa)
+                    elif event.key == pygame.K_UP:
+                        character.movement(0, -1, mapa)
+                    elif event.key == pygame.K_DOWN:
+                        character.movement(0, 1, mapa)
+
+# --- Recuperar resistencia SOLO cuando no hay teclas presionadas ---
+        keys = pygame.key.get_pressed()
+        if not (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]):
+            character.recuperar_resistencia(1 / constants.FPS)
 
         screen.fill((0, 0, 0))
         mapa.dibujar(screen)
         character.draw(screen)
-        pygame.display.update()
         pygame.display.flip()
 
     pygame.quit()

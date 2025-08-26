@@ -53,3 +53,8 @@ class Mapa:
         tile = self.tiles[tile_y][tile_x]
         info = self.legend.get(tile, {})
         return info.get("blocked", False)
+    
+    def get_surface_weight(self, tile_x, tile_y):
+        tile = self.tiles[tile_y][tile_x]
+        info = self.legend.get(tile, {})
+        return info.get("surface_weight", 1.0)
