@@ -48,12 +48,18 @@ class Character:
 
 
     def movement(self, dx, dy, mapa):
-        """Mueve un tile según multiplicadores del proyecto."""
+        """Mueve un tile según multiplicadores del proyecto, evitando navbar y HUD."""
         if self.resistencia <= 0:
             return  # Exhausto, no se mueve
 
         nueva_x = self.tile_x + dx
         nueva_y = self.tile_y + dy
+
+        # Limitar movimiento por el tamaño real del mapa
+        min_y = 0
+        max_y = mapa.height - 1
+        if nueva_y < min_y or nueva_y > max_y:
+            return
 
         if not mapa.is_blocked(nueva_x, nueva_y):
             # Multiplicadores
@@ -76,8 +82,6 @@ class Character:
                 interp_x = start_pos[0] + (end_pos[0] - start_pos[0]) * i / pasos
                 interp_y = start_pos[1] + (end_pos[1] - start_pos[1]) * i / pasos
                 self.shape.center = (interp_x, interp_y)
-
-                # Render en loop principal, aquí solo actualiza posición
 
             self.tile_x = nueva_x
             self.tile_y = nueva_y

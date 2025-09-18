@@ -5,13 +5,14 @@ import sys
 import constants
 
 class Mapa:
-    def __init__(self, archivo_json, tile_size, hud_height = 50, top_bar_height = 40):
+    def __init__(self, archivo_json, tile_size, hud_height = 60, top_bar_height = 40):
         self.tile_size = tile_size
         self.tiles = []
         self.legend = {}
         self.width = 0
         self.height = 0
         self.top_bar_height = top_bar_height
+        self.hud_height = hud_height
 
         # Colores por defecto
         self.colors = {
@@ -37,7 +38,7 @@ class Mapa:
         self.height = data["height"]
 
     def dibujar(self, screen):
-        # Dibuja el mapa debajo de la barra superior
+        # Dibuja el mapa completo debajo de la barra superior
         for y, row in enumerate(self.tiles):
             for x, tile in enumerate(row):
                 color = self.colors.get(tile, (0, 0, 0))  # negro si no está definido
@@ -48,6 +49,10 @@ class Mapa:
                     self.tile_size
                 )
                 pygame.draw.rect(screen, color, rect)
+
+    def get_hud_bottom_y(self):
+        # Devuelve la posición Y donde debe ir el HUD inferior
+        return self.height * self.tile_size + self.top_bar_height
 
     def is_blocked(self, tile_x, tile_y):
         # fuera del mapa
