@@ -5,13 +5,13 @@ import sys
 import constants
 
 class Mapa:
-    def __init__(self, archivo_json, tile_size, hud_height = 50):
+    def __init__(self, archivo_json, tile_size, hud_height = 50, top_bar_height = 40):
         self.tile_size = tile_size
         self.tiles = []
         self.legend = {}
         self.width = 0
         self.height = 0
-
+        self.top_bar_height = top_bar_height
 
         # Colores por defecto
         self.colors = {
@@ -37,12 +37,13 @@ class Mapa:
         self.height = data["height"]
 
     def dibujar(self, screen):
+        # Dibuja el mapa debajo de la barra superior
         for y, row in enumerate(self.tiles):
             for x, tile in enumerate(row):
                 color = self.colors.get(tile, (0, 0, 0))  # negro si no está definido
                 rect = pygame.Rect(
                     x * self.tile_size,
-                    y * self.tile_size,
+                    y * self.tile_size + self.top_bar_height,
                     self.tile_size,
                     self.tile_size
                 )

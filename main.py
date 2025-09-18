@@ -11,17 +11,17 @@ from stack import Stack
 def main():
     pygame.init()
     api.api_request()
-#map
-    mapa = Mapa("json_files/city_map.json", tile_size=25)
-#HUD
+    # Define el alto de la barra superior (debe coincidir con hud.py)
+    #map
+    mapa = Mapa("json_files/city_map.json", tile_size=25, top_bar_height=constants.TOP_BAR_HEIGHT)
+    #HUD
 
-#screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
     screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
     pygame.display.set_caption("Courier Quest")
 
 
 
-    character = Character(0,0, tile_size=25, screen=screen)
+    character = Character(0,0, tile_size=25, screen=screen, top_bar_height=TOP_BAR_HEIGHT)
 
     # Stack para guardar posiciones previas
     move_stack = Stack()
@@ -57,8 +57,10 @@ def main():
                         prev_pos = move_stack.pop()
                         if prev_pos:
                             character.tile_x, character.tile_y = prev_pos
-                            character.shape.center = (character.tile_x * character.tile_size + character.tile_size // 2,
-                                                     character.tile_y * character.tile_size + character.tile_size // 2)
+                            character.shape.center = (
+                                character.tile_x * character.tile_size + character.tile_size // 2,
+                                character.tile_y * character.tile_size + character.tile_size // 2 + TOP_BAR_HEIGHT
+                            )
 
 # --- Recuperar resistencia SOLO cuando no hay teclas presionadas ---
         keys = pygame.key.get_pressed()
