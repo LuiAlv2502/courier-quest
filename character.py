@@ -1,9 +1,9 @@
 import pygame
 import constants
-import mapa
+
 
 class Character:
-    def __init__(self, tile_x, tile_y, tile_size, screen):
+    def __init__(self, tile_x, tile_y, tile_size, screen, top_bar_height=None):
         self.screen = screen
         self.tile_x = tile_x
         self.tile_y = tile_y
@@ -11,14 +11,15 @@ class Character:
         self.tile_size = tile_size
         self.resistencia = 100
         self.peso_total = 0
+        self.top_bar_height = top_bar_height if top_bar_height is not None else 0
         self.shape = pygame.Rect(
             tile_x * tile_size,
-            tile_y * tile_size,
+            tile_y * tile_size + self.top_bar_height,
             constants.WIDTH_CHARACTER,
             constants.HEIGHT_CHARACTER
         )
         self.shape.center = (tile_x * tile_size + tile_size // 2,
-                             tile_y * tile_size + tile_size // 2)
+                             tile_y * tile_size + tile_size // 2 + self.top_bar_height)
         self.ultimo_movimiento = 0 
         self.delay_recuperacion = 1000  
 
@@ -68,7 +69,7 @@ class Character:
             # Interpolación suave
             start_pos = self.shape.center
             end_pos = (nueva_x * self.tile_size + self.tile_size // 2,
-                       nueva_y * self.tile_size + self.tile_size // 2)
+                       nueva_y * self.tile_size + self.tile_size // 2 + self.top_bar_height)
 
             pasos = max(1, int(5 / velocidad))
             for i in range(1, pasos + 1):

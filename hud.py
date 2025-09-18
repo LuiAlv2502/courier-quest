@@ -5,7 +5,12 @@ import constants
 
 
 def draw_hud(screen, character):
+
     hud_height = 60
+    # --- Top bar ---
+    top_bar_height = constants.TOP_BAR_HEIGHT
+    pygame.draw.rect(screen, (60, 60, 60), (0, 0, constants.WIDTH_SCREEN, top_bar_height))
+    # --- HUD inferior ---
     pygame.draw.rect(screen, (40, 40, 40), (0, constants.HEIGHT_SCREEN - hud_height, constants.WIDTH_SCREEN, hud_height))
 
     # --- Barra de resistencia ---
@@ -41,9 +46,14 @@ def draw_hud(screen, character):
     screen.blit(timer_text, (600, constants.HEIGHT_SCREEN - hud_height + 18))
 
 # --- Puntuación centrada en la parte superior ---
-    font = pygame.font.SysFont(None, 36)  # tamaño un poco más grande para destacar
-    score_text = font.render(f"Puntuación: {getattr(character, 'score', 0)}", True, (0, 0, 0))
-
-# Calculamos posición para centrar horizontalmente
-    text_rect = score_text.get_rect(center=(constants.WIDTH_SCREEN // 2, 20))  # 20 píxeles desde el top
+    # --- Puntuación centrada en la parte superior ---
+    font_top = pygame.font.SysFont(None, 36)
+    score_text = font_top.render(f"Puntuación: {getattr(character, 'score', 0)}", True, (255, 255, 255))
+    text_rect = score_text.get_rect(center=(constants.WIDTH_SCREEN // 2, top_bar_height // 2))
     screen.blit(score_text, text_rect)
+
+    # --- Control de devolver en la esquina derecha ---
+    font_info = pygame.font.SysFont(None, 24)
+    info_text = font_info.render("[Z] Deshacer movimiento", True, (200, 200, 0))
+    info_rect = info_text.get_rect(topright=(constants.WIDTH_SCREEN - 20, 10))
+    screen.blit(info_text, info_rect)
