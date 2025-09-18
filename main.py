@@ -4,7 +4,9 @@ from character import Character
 import api
 from mapa import Mapa
 from hud import draw_hud
+from stack import Stack
 
+# Clase Stack para historial de movimientos
 
 def main():
     pygame.init()
@@ -20,6 +22,9 @@ def main():
 
 
     character = Character(0,0, tile_size=25, screen=screen)
+
+    # Stack para guardar posiciones previas
+    move_stack = Stack()
 
     clock = pygame.time.Clock()
     run = True
@@ -37,13 +42,23 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if character.resistencia > 0:
                     if event.key == pygame.K_LEFT:
+                        move_stack.push((character.tile_x, character.tile_y))
                         character.movement(-1, 0, mapa)
                     elif event.key == pygame.K_RIGHT:
+                        move_stack.push((character.tile_x, character.tile_y))
                         character.movement(1, 0, mapa)
                     elif event.key == pygame.K_UP:
+                        move_stack.push((character.tile_x, character.tile_y))
                         character.movement(0, -1, mapa)
                     elif event.key == pygame.K_DOWN:
+                        move_stack.push((character.tile_x, character.tile_y))
                         character.movement(0, 1, mapa)
+                    elif event.key == pygame.K_z:
+                        prev_pos = move_stack.pop()
+                        if prev_pos:
+                            character.tile_x, character.tile_y = prev_pos
+                            character.shape.center = (character.tile_x * character.tile_size + character.tile_size // 2,
+                                                     character.tile_y * character.tile_size + character.tile_size // 2)
 
 # --- Recuperar resistencia SOLO cuando no hay teclas presionadas ---
         keys = pygame.key.get_pressed()
