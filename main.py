@@ -9,7 +9,6 @@ from stack import Stack
 from game_over import show_game_over
 from victory import show_victory
 
-# Clase Stack para historial de movimientos
 
 def main():
     pygame.init()
@@ -56,7 +55,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
             elif event.type == pygame.KEYDOWN:
-                if character.resistencia > 0:
+                if not character.resistencia_exhausto:
                     if event.key == pygame.K_LEFT:
                         move_stack.push((character.tile_x, character.tile_y))
                         character.movement(-1, 0, mapa)
@@ -82,6 +81,9 @@ def main():
         keys = pygame.key.get_pressed()
         if not (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]):
             character.recuperar_resistencia(1 / constants.FPS)
+            # Actualiza la bandera solo en la recuperación
+            if character.resistencia_exhausto and character.resistencia >= 30:
+                character.resistencia_exhausto = False
 
         # --- Dibujo de pantalla ---
         screen.fill((0, 0, 0))

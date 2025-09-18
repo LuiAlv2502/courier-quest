@@ -9,7 +9,7 @@ class Character:
         self.tile_y = tile_y
         self.reputacion = 100
         self.tile_size = tile_size
-        self.resistencia = 100
+        self.resistencia = 20
         self.peso_total = 0
         self.top_bar_height = top_bar_height if top_bar_height is not None else 0
         self.shape = pygame.Rect(
@@ -22,6 +22,7 @@ class Character:
                              tile_y * tile_size + tile_size // 2 + self.top_bar_height)
         self.ultimo_movimiento = 0 
         self.delay_recuperacion = 1000  
+        self.resistencia_exhausto = False  # Bandera para bloqueo de movimiento
 
     def draw(self, screen):
         pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
@@ -45,12 +46,19 @@ class Character:
             surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
         self.resistencia -= (base_consumo + peso_extra) * surface_multiplier
         self.resistencia = max(0, self.resistencia)
+        # Si la resistencia llega a 0 o menos, activa exhausto
+        if self.resistencia <= 0:
+            self.resistencia_exhausto = True
+        # Si la bandera está activa y la resistencia sube a 30 o más, desactiva exhausto
+        if self.resistencia_exhausto and self.resistencia >= 30:
+            self.resistencia_exhausto = False
 
 
     def movement(self, dx, dy, mapa):
-        """Mueve un tile según multiplicadores del proyecto, evitando navbar y HUD."""
-        if self.resistencia <= 0:
-            return  # Exhausto, no se mueve
+        """Mueve un tile según multiplicadores del proyecto, evitando navbar y HUD. Si resistencia llega a 0, queda exhausto hasta recuperarse a 30."""
+        # Bloquea movimiento si está exhausto
+        if self.resistencia_exhausto:
+            return
 
         nueva_x = self.tile_x + dx
         nueva_y = self.tile_y + dy
