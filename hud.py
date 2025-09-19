@@ -141,6 +141,11 @@ def draw_hud(screen, character, tiempo_restante=None, objetivo_dinero=None):
     screen.blit(info_text, info_rect)
 
 def draw_job_decision(screen, pending_job, job_decision_message=None):
+    rect_width = 600
+    rect_height = 150
+    rect_x = (constants.WIDTH_SCREEN - rect_width) // 2
+    rect_y = (constants.HEIGHT_SCREEN - rect_height) // 2 - 40
+    pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height))
     if not pending_job:
         return
     font = pygame.font.SysFont(None, 32)

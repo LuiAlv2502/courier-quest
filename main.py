@@ -1,6 +1,7 @@
 from job_loader import load_jobs_with_accessible_points
 from job_manager import JobManager
 from job import Job
+from hud import draw_inventory
 
 import pygame 
 import constants
@@ -161,7 +162,6 @@ def main():
         character.update_stats()  # Actualiza puntuación y peso
         screen.fill((0, 0, 0))
         if show_inventory:
-            from hud import draw_inventory
             draw_inventory(screen, character.inventario, order=inventory_order)
         else:
             mapa.dibujar(screen)
