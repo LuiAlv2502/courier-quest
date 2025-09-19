@@ -1,15 +1,19 @@
+
 import pygame
 import constants
+from job import Job
+from inventory import Inventory
 
 
 class Character:
+
     def __init__(self, tile_x, tile_y, tile_size, screen, top_bar_height=None):
         self.screen = screen
         self.tile_x = tile_x
         self.tile_y = tile_y
         self.reputacion = 100
         self.tile_size = tile_size
-        self.resistencia = 20
+        self.resistencia = 100
         self.peso_total = 0
         self.top_bar_height = top_bar_height if top_bar_height is not None else 0
         self.shape = pygame.Rect(
@@ -20,14 +24,31 @@ class Character:
         )
         self.shape.center = (tile_x * tile_size + tile_size // 2,
                              tile_y * tile_size + tile_size // 2 + self.top_bar_height)
-        self.ultimo_movimiento = 0 
-        self.delay_recuperacion = 1000  
+        self.ultimo_movimiento = 0
         self.resistencia_exhausto = False  # Bandera para bloqueo de movimiento
+        self.inventario = Inventory(constants.MAX_WEIGHT)
+        self.delay_recuperacion = 1000  # milisegundos para recuperar resistencia
+        self.score = 0  # Puntuación del jugador
+
+    def process_dropoff(self, job):
+        # Intenta entregar el trabajo y suma la recompensa si lo logra
+        entregado = self.inventario.deliver_job(job, (self.tile_x, self.tile_y))
+        if entregado:
+            self.score += job.payout
+        return entregado
+    
+    def update_stats(self):
+        # Actualiza la puntuación y el peso total
+        self.score = getattr(self, 'score', 0)  # No sumar por recogido, solo por entregado
+        self.peso_total = sum(job.weight for job in self.inventario.jobs if getattr(job, 'recogido', False))
+
+    def add_score(self, payout):
+        self.score += payout
 
     def draw(self, screen):
         pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
 
-    def recuperar_resistencia(self, segundos = 1):
+    def recuperar_resistencia(self, segundos=1):
         ahora = pygame.time.get_ticks()
         if ahora - self.ultimo_movimiento >= self.delay_recuperacion:
             self.resistencia = min(100, self.resistencia + 5 * segundos)
