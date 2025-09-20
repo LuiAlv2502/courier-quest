@@ -65,6 +65,9 @@ class Character:
 
         if mapa:
             surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
+        # Validación: imprime los pesos de los trabajos recogidos y el peso total
+        recogidos = [job.weight for job in self.inventario.jobs if getattr(job, 'recogido', False)]
+        print(f"Pesos recogidos: {recogidos}, Peso total: {self.peso_total}")
         self.resistencia -= (base_consumo + peso_extra) * surface_multiplier
         self.resistencia = max(0, self.resistencia)
         # Si la resistencia llega a 0 o menos, activa exhausto

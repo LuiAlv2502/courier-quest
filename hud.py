@@ -35,7 +35,7 @@ import character
 import constants
 
 
-def draw_hud(screen, character, tiempo_restante=None, objetivo_dinero=None):
+def draw_hud(screen, character, tiempo_restante=None, objetivo_dinero=None, reputacion=None):
     # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
     for job in character.inventario.jobs:
         # Solo mostrar pickup si no ha sido recogido
@@ -102,7 +102,7 @@ def draw_hud(screen, character, tiempo_restante=None, objetivo_dinero=None):
     screen.blit(peso_text, (250, constants.HEIGHT_SCREEN - hud_height + 18))
 
     # Reputación destacada
-    rep = getattr(character, 'reputacion', 100)
+    rep = reputacion if reputacion is not None else getattr(character, 'reputacion', 100)
     if rep >= 70:
         rep_color = (0, 200, 255)
     elif rep >= 30:
@@ -142,9 +142,9 @@ def draw_hud(screen, character, tiempo_restante=None, objetivo_dinero=None):
 
 def draw_job_decision(screen, pending_job, job_decision_message=None):
     rect_width = 600
-    rect_height = 150
+    rect_height = 130
     rect_x = (constants.WIDTH_SCREEN - rect_width) // 2
-    rect_y = (constants.HEIGHT_SCREEN - rect_height) // 2 - 40
+    rect_y = (constants.HEIGHT_SCREEN - rect_height) // 2 - 25
     pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height))
     if not pending_job:
         return

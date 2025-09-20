@@ -1,0 +1,190 @@
+import pygame
+import constants
+from character import Character
+from job_loader import load_jobs_with_accessible_points
+from job_manager import JobManager
+from mapa import Mapa
+from hud import draw_hud, draw_job_decision, draw_inventory
+from stack import Stack
+from game_over import show_game_over
+from victory import show_victory
+import api
+
+class CourierQuestGame:
+    def __init__(self):
+        self.init_pygame()
+        self.load_resources()
+        self.running = True
+        self.show_inventory = False
+        self.inventory_order = None
+        self.pending_job = None
+        self.show_job_decision = False
+        self.job_decision_message = ""
+        self.move_stack = Stack()
+        self.first_frame = True
+        self.tiempo_inicio = None
+        self.last_deadline_penalty = False  
+
+    def init_pygame(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
+        pygame.display.set_caption("Courier Quest")
+        #api.api_request()
+
+    def load_resources(self):
+        self.mapa = Mapa("json_files/city_map.json", tile_size=25, top_bar_height=constants.TOP_BAR_HEIGHT)
+        jobs_list = load_jobs_with_accessible_points("json_files/city_jobs.json", self.mapa)
+        self.job_manager = JobManager(jobs_list)
+        self.character = Character(0,0, tile_size=25, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
+        import json
+        with open("json_files/city_map.json", "r", encoding="utf-8") as f:
+            map_json = json.load(f)["data"]
+        self.tiempo_limite = map_json.get("max_time", 120)
+        self.objetivo_valor = map_json.get("goal", None)
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_i:
+                    self.show_inventory = not self.show_inventory
+                    self.inventory_order = None
+                elif self.show_inventory:
+                    if event.key == pygame.K_d:
+                        self.inventory_order = 'deadline'
+                    elif event.key == pygame.K_p:
+                        self.inventory_order = 'priority'
+                elif self.show_job_decision and not self.show_inventory:
+                    if event.key == pygame.K_a:
+                        if self.character.inventario.accept_job(self.pending_job):
+                            self.job_manager.remove_job(self.pending_job.id)
+                            self.show_job_decision = False
+                            self.pending_job = None
+                            self.job_decision_message = ""
+                        else:
+                            self.job_decision_message = "No puedes aceptar el pedido por peso. Debes rechazarlo (N)."
+                    elif event.key == pygame.K_n:
+                        self.job_manager.remove_job(self.pending_job.id)
+                        self.character.reputacion = max(0, self.character.reputacion - 10)
+                        self.show_job_decision = False
+                        self.pending_job = None
+                        self.job_decision_message = ""
+                elif not self.show_job_decision and not self.show_inventory:
+                    if not self.character.resistencia_exhausto:
+                        if event.key == pygame.K_LEFT:
+                            self.move_stack.push((self.character.tile_x, self.character.tile_y))
+                            self.character.movement(-1, 0, self.mapa)
+                        elif event.key == pygame.K_RIGHT:
+                            self.move_stack.push((self.character.tile_x, self.character.tile_y))
+                            self.character.movement(1, 0, self.mapa)
+                        elif event.key == pygame.K_UP:
+                            self.move_stack.push((self.character.tile_x, self.character.tile_y))
+                            self.character.movement(0, -1, self.mapa)
+                        elif event.key == pygame.K_DOWN:
+                            self.move_stack.push((self.character.tile_x, self.character.tile_y))
+                            self.character.movement(0, 1, self.mapa)
+                        elif event.key == pygame.K_z:
+                            prev_pos = self.move_stack.pop()
+                            if prev_pos:
+                                self.character.tile_x, self.character.tile_y = prev_pos
+                                self.character.shape.center = (
+                                    self.character.tile_x * self.character.tile_size + self.character.tile_size // 2,
+                                    self.character.tile_y * self.character.tile_size + self.character.tile_size // 2 + constants.TOP_BAR_HEIGHT
+                                )
+                    for job in self.character.inventario.jobs[:]:
+                        if not getattr(job, 'recogido', False):
+                            self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
+                        else:
+                            self.character.process_dropoff(job)
+
+    def update_game_state(self):
+        if self.tiempo_inicio is None:
+            self.tiempo_inicio = pygame.time.get_ticks()
+        elapsed_seconds = int((pygame.time.get_ticks() - self.tiempo_inicio) / 1000)
+        tiempo_restante = max(0, int(self.tiempo_limite - elapsed_seconds))
+        if self.first_frame:
+            self.job_manager.update_visible_jobs(0)
+            self.first_frame = False
+        else:
+            self.job_manager.update_visible_jobs(elapsed_seconds)
+        # Pending job logic
+        if not self.show_job_decision:
+            for job in self.job_manager.visible_jobs:
+                if job not in self.character.inventario.jobs:
+                    release_time = int(getattr(job, 'release_time', 0))
+                    if elapsed_seconds >= release_time:
+                        self.pending_job = job
+                        self.show_job_decision = True
+                        break
+        # Recuperar resistencia SOLO cuando no hay teclas presionadas
+        keys = pygame.key.get_pressed()
+        if not self.show_job_decision:
+            if not (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]):
+                self.character.recuperar_resistencia(1 / constants.FPS)
+                if self.character.resistencia_exhausto and self.character.resistencia >= 30:
+                    self.character.resistencia_exhausto = False
+
+        # Eliminar trabajos cuyo deadline coincide con el timer del juego (hora y minuto)
+        # Timer empieza desde 0 y elimina trabajos cuando el timer en minutos iguala el minuto del deadline
+        minutos_juego = elapsed_seconds // 60
+        segundos_juego = elapsed_seconds % 60
+        jobs_to_remove = []
+        for job in self.character.inventario.jobs:
+            try:
+                tiempo_deadline = job.deadline.split('T')[1]
+                min_deadline = int(tiempo_deadline.split(':')[0])
+                sec_deadline = int(tiempo_deadline.split(':')[1])
+                if minutos_juego == min_deadline and segundos_juego == sec_deadline:
+                    self.character.inventario.remove_job(job.id)
+                    self.character.reputacion = max(0, self.character.reputacion - 10)
+                    self.last_deadline_penalty = True
+                    print(f"Job {job.id} removed due to deadline at {min_deadline}:{sec_deadline}. Current time: {minutos_juego}:{segundos_juego}")
+            except Exception:
+                continue
+
+
+    def draw(self):
+        self.character.update_stats()
+        self.screen.fill((0, 0, 0))
+        if self.show_inventory:
+            draw_inventory(self.screen, self.character.inventario, order=self.inventory_order)
+        else:
+            self.mapa.dibujar(self.screen)
+            self.character.draw(self.screen)
+            tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
+            tiempo_restante = max(0, int(self.tiempo_limite - tiempo_actual))
+            draw_hud(self.screen, self.character, tiempo_restante=tiempo_restante, objetivo_dinero=self.objetivo_valor, reputacion=self.character.reputacion)
+            if self.show_job_decision and self.pending_job:
+                draw_job_decision(self.screen, self.pending_job, self.job_decision_message)
+            # Mensaje visual si hubo penalización por deadline
+            if self.last_deadline_penalty == True:
+                font = pygame.font.SysFont(None, 32)
+                msg = font.render("¡Perdiste reputación por no entregar a tiempo!", True, (255, 80, 80))
+                self.screen.blit(msg, (constants.WIDTH_SCREEN//2 - 200, 100))
+                self.last_deadline_penalty = False
+        pygame.display.flip()
+
+    def check_win_loss(self):
+        if getattr(self.character, 'score', 0) >= self.objetivo_valor:
+            show_victory(self.screen)
+            self.running = False
+        if getattr(self.character, 'reputacion', 100) < 30:
+            show_game_over(self.screen, reason="Reputación demasiado baja")
+            self.running = False
+        tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
+        if tiempo_actual >= self.tiempo_limite:
+            show_game_over(self.screen, reason="Tiempo agotado")
+            self.running = False
+
+    def run(self):
+        while self.running:
+            self.handle_events()
+            self.update_game_state()
+            self.draw()
+            self.check_win_loss()
+        pygame.quit()
+
+if __name__ == "__main__":
+    game = CourierQuestGame()
+    game.run()
