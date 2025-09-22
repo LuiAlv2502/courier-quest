@@ -4,7 +4,7 @@ import json
 import sys
 import constants
 
-class Mapa:
+class Map:
     def __init__(self, archivo_json, tile_size, hud_height = 60, top_bar_height = 40):
         self.tile_size = tile_size
         self.tiles = []
@@ -37,8 +37,8 @@ class Mapa:
         self.width = data["width"]
         self.height = data["height"]
 
-    def dibujar(self, screen):
-        # Dibuja el mapa completo debajo de la barra superior
+    # Dibuja el mapa completo recorriendo los tiles dados por el json y se colorea dependiendo de su tipo
+    def draw_map(self, screen):
         for y, row in enumerate(self.tiles):
             for x, tile in enumerate(row):
                 color = self.colors.get(tile, (0, 0, 0))  # negro si no está definido

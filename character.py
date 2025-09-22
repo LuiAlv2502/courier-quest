@@ -6,6 +6,8 @@ from inventory import Inventory
 
 
 class Character:
+    def get_score(self):
+        return self.score
 
     def __init__(self, tile_x, tile_y, tile_size, screen, top_bar_height=None):
         self.screen = screen

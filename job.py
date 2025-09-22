@@ -1,4 +1,6 @@
 class Job:
+    def is_recogido(self):
+        return getattr(self, 'recogido', False)
     def __init__(self, id, pickup, dropoff, payout, deadline, weight, priority, release_time):
         self.id = id
         self.pickup = tuple(pickup)

@@ -1,6 +1,10 @@
 import requests
 import json
 
+# Realiza una solicitud a la API y guarda los datos en archivos JSON
+# Primero se define la url de la api y los endpoints que se van a consultar dentro de un diccionario
+# Luego se itera sobre el diccionario, haciendo una solicitud GET a cada
+# endpoint utilizando la biblioteca requests.
 def api_request():
     base_url = "https://tigerds-api.kindflower-ccaf48b6.eastus.azurecontainerapps.io"
     endpoints = {

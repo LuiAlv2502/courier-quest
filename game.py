@@ -3,12 +3,12 @@ import constants
 from character import Character
 from job_loader import load_jobs_with_accessible_points
 from job_manager import JobManager
-from mapa import Mapa
-from hud import draw_hud, draw_job_decision, draw_inventory
+from map import Map
 from stack import Stack
 from game_over import show_game_over
 from victory import show_victory
 import api
+from hud import HUD
 
 class CourierQuestGame:
     def __init__(self):
@@ -29,10 +29,10 @@ class CourierQuestGame:
         pygame.init()
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        #api.api_request()
+        api.api_request()
 
     def load_resources(self):
-        self.mapa = Mapa("json_files/city_map.json", tile_size=25, top_bar_height=constants.TOP_BAR_HEIGHT)
+        self.mapa = Map("json_files/city_map.json", tile_size=25, top_bar_height=constants.TOP_BAR_HEIGHT)
         jobs_list = load_jobs_with_accessible_points("json_files/city_jobs.json", self.mapa)
         self.job_manager = JobManager(jobs_list)
         self.character = Character(0,0, tile_size=25, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
@@ -41,6 +41,8 @@ class CourierQuestGame:
             map_json = json.load(f)["data"]
         self.tiempo_limite = map_json.get("max_time", 120)
         self.objetivo_valor = map_json.get("goal", None)
+
+        self.hud = HUD(self.screen)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -148,15 +150,15 @@ class CourierQuestGame:
         self.character.update_stats()
         self.screen.fill((0, 0, 0))
         if self.show_inventory:
-            draw_inventory(self.screen, self.character.inventario, order=self.inventory_order)
+            self.hud.draw_inventory(self.character.inventario, order=self.inventory_order)
         else:
-            self.mapa.dibujar(self.screen)
+            self.mapa.draw_map(self.screen)
             self.character.draw(self.screen)
             tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
             tiempo_restante = max(0, int(self.tiempo_limite - tiempo_actual))
-            draw_hud(self.screen, self.character, tiempo_restante=tiempo_restante, objetivo_dinero=self.objetivo_valor, reputacion=self.character.reputacion)
+            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=self.objetivo_valor, reputacion=self.character.reputacion)
             if self.show_job_decision and self.pending_job:
-                draw_job_decision(self.screen, self.pending_job, self.job_decision_message)
+                self.hud.draw_job_decision(self.pending_job, self.job_decision_message)
             # Mensaje visual si hubo penalización por deadline
             if self.last_deadline_penalty == True:
                 font = pygame.font.SysFont(None, 32)
