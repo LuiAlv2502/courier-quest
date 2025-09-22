@@ -42,10 +42,10 @@ class HUD:
         pygame.draw.rect(self.screen, (60, 60, 60), (0, 0, constants.WIDTH_SCREEN, top_bar_height))
         dinero_ganado = character.get_score()
         if money_objective is not None:
-            score_text = self.font_top.render(f"Puntuación: ${dinero_ganado} / ${money_objective}", True, (255, 255, 0))
+            score_text = self.font_top.render(f"Puntuación: ${dinero_ganado} / ${money_objective}", True, (255, 255, 255))
         else:
-            score_text = self.font_top.render(f"Puntuación: ${dinero_ganado}", True, (255, 255, 0))
-        text_rect = score_text.get_rect(center=(constants.WIDTH_SCREEN // 2, top_bar_height // 2))
+            score_text = self.font_top.render(f"Puntuación: ${dinero_ganado}", True, (255, 255, 255))
+        text_rect = score_text.get_rect(topleft=(constants.WIDTH_SCREEN // 2 + 30, top_bar_height // 2 - 10))
         self.screen.blit(score_text, text_rect)
 
     def draw_downbar(self, character, tiempo_restante=None, reputacion=None):
@@ -74,9 +74,9 @@ class HUD:
         else:
             timer_text = self.font.render("Tiempo: 00:00", True, (255, 255, 255))
         self.screen.blit(timer_text, (600, constants.HEIGHT_SCREEN - hud_height + 18))
-        info_text = self.font_info.render("[Z] Deshacer movimiento", True, (200, 200, 0))
-        info_rect = info_text.get_rect(topright=(constants.WIDTH_SCREEN - 20, 10))
-        self.screen.blit(info_text, info_rect)
+        #info_text = self.font_info.render("[Z] Deshacer movimiento", True, (255, 255, 255))
+        #info_rect = info_text.get_rect(topright=(constants.WIDTH_SCREEN - 20, 10))
+        #self.screen.blit(info_text, info_rect)
 
     def draw_resistencia(self, character):
         hud_height = 60
