@@ -3,6 +3,33 @@ import character
 import constants
 
 class HUD:
+    def show_game_over(self, reason="Tiempo agotado"):
+        """Muestra la pantalla de Game Over con el motivo."""
+        self.screen.fill((0, 0, 0))
+        font = pygame.font.SysFont(None, 72)
+        text = font.render("GAME OVER", True, (255, 0, 0))
+        reason_font = pygame.font.SysFont(None, 36)
+        reason_text = reason_font.render(reason, True, (255, 255, 255))
+        text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 - 40))
+        reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 + 40))
+        self.screen.blit(text, text_rect)
+        self.screen.blit(reason_text, reason_rect)
+        pygame.display.flip()
+        pygame.time.wait(2500)
+
+    def show_victory(self, reason="¡Has llegado al objetivo!"):
+        """Muestra la pantalla de Victoria con el motivo."""
+        self.screen.fill((0, 0, 0))
+        font = pygame.font.SysFont(None, 72)
+        text = font.render("VICTORIA", True, (0, 255, 0))
+        reason_font = pygame.font.SysFont(None, 36)
+        reason_text = reason_font.render(reason, True, (255, 255, 255))
+        text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 - 40))
+        reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 + 40))
+        self.screen.blit(text, text_rect)
+        self.screen.blit(reason_text, reason_rect)
+        pygame.display.flip()
+        pygame.time.wait(2500)
     def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.SysFont(None, 28)

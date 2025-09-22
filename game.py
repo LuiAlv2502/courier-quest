@@ -5,8 +5,6 @@ from job_loader import load_jobs_with_accessible_points
 from job_manager import JobManager
 from map import Map
 from stack import Stack
-from game_over import show_game_over
-from victory import show_victory
 import api
 from hud import HUD
 
@@ -169,14 +167,14 @@ class CourierQuestGame:
 
     def check_win_loss(self):
         if getattr(self.character, 'score', 0) >= self.objetivo_valor:
-            show_victory(self.screen)
+            self.hud.show_victory()
             self.running = False
         if getattr(self.character, 'reputacion', 100) < 30:
-            show_game_over(self.screen, reason="Reputación demasiado baja")
+            self.hud.show_game_over(reason="Reputación demasiado baja")
             self.running = False
         tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
         if tiempo_actual >= self.tiempo_limite:
-            show_game_over(self.screen, reason="Tiempo agotado")
+            self.hud.show_game_over(reason="Tiempo agotado")
             self.running = False
 
     def run(self):
