@@ -93,7 +93,7 @@ class CourierQuestGame:
                                     self.character.tile_y * self.character.tile_size + self.character.tile_size // 2 + constants.TOP_BAR_HEIGHT
                                 )
                     for job in self.character.inventario.jobs[:]:
-                        if not getattr(job, 'recogido', False):
+                        if not job.is_recogido():
                             self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
                         else:
                             self.character.process_dropoff(job)
@@ -112,7 +112,7 @@ class CourierQuestGame:
         if not self.show_job_decision:
             for job in self.job_manager.visible_jobs:
                 if job not in self.character.inventario.jobs:
-                    release_time = int(getattr(job, 'release_time', 0))
+                    release_time = int(job.release_time)
                     if elapsed_seconds >= release_time:
                         self.pending_job = job
                         self.show_job_decision = True
@@ -166,10 +166,10 @@ class CourierQuestGame:
         pygame.display.flip()
 
     def check_win_loss(self):
-        if getattr(self.character, 'score', 0) >= self.objetivo_valor:
+        if self.character.score >= self.objetivo_valor:
             self.hud.show_victory()
             self.running = False
-        if getattr(self.character, 'reputacion', 100) < 30:
+        if self.character.reputacion < 30:
             self.hud.show_game_over(reason="Reputación demasiado baja")
             self.running = False
         tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000

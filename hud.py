@@ -58,7 +58,7 @@ class HUD:
         peso_actual = character.peso_total
         peso_text = self.font.render(f"Peso actual: {peso_actual}", True, (255, 255, 255))
         self.screen.blit(peso_text, (250, constants.HEIGHT_SCREEN - hud_height + 18))
-        rep = reputacion if reputacion is not None else getattr(character, 'reputacion', 100)
+        rep = reputacion if reputacion is not None else character.reputacion
         if rep >= 70:
             rep_color = (0, 200, 255)
         elif rep >= 30:

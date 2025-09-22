@@ -1,5 +1,7 @@
 import heapq
 
+import job
+
 class Inventory:
     def __init__(self, max_weight):
         self.max_weight = max_weight
@@ -14,7 +16,7 @@ class Inventory:
 
     def deliver_job(self, job, character_pos, mapa=None):
         # Si el jugador está en el dropoff (mismo tile), entrega el trabajo
-        if character_pos == job.dropoff and getattr(job, 'recogido', False):
+        if character_pos == job.dropoff and job.recogido:
             self.remove_job(job.id)
             return True
         return False

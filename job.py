@@ -1,6 +1,6 @@
 class Job:
     def is_recogido(self):
-        return getattr(self, 'recogido', False)
+        return self.recogido
     def __init__(self, id, pickup, dropoff, payout, deadline, weight, priority, release_time):
         self.id = id
         self.pickup = tuple(pickup)
@@ -10,6 +10,7 @@ class Job:
         self.weight = weight
         self.priority = priority
         self.release_time = release_time
+        self.recogido = False
 
     def __repr__(self):
         return f"Job(id={self.id}, prioridad={self.priority}, peso={self.weight}, deadline={self.deadline})"
