@@ -1,5 +1,5 @@
 import json
-from mapa import Mapa
+import map
 from job import Job
 from collections import deque
 
