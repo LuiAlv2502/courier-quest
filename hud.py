@@ -90,19 +90,22 @@ class HUD:
             hud_y = self.screen.get_height() - hud_height
         except Exception:
             hud_y = constants.HEIGHT_SCREEN - hud_height
-        max_width = 200
-        bar_height = 20
-        x, y = 20, hud_y + 20
-        resistencia_ratio = character.resistencia / 100
-        resistencia_width = int(max_width * resistencia_ratio)
-        if resistencia_ratio > 0.5:
-            color = (0, 200, 0)
-        elif resistencia_ratio > 0.25:
-            color = (200, 200, 0)
+        # Si la resistencia es 0 o menos, mostrar siempre stamina_0
+        if character.resistencia == 0:
+            sprite_index = 0
         else:
-            color = (200, 0, 0)
-        pygame.draw.rect(self.screen, (100, 100, 100), (x, y, max_width, bar_height))
-        pygame.draw.rect(self.screen, color, (x, y, resistencia_width, bar_height))
+            stamina_val = max(0, min(100, int(character.resistencia)))
+            sprite_index = stamina_val // 10
+            #si el stamina val es menor a 10 y mayor a 0, forzar a 1
+            if sprite_index < 1:
+                sprite_index = 1
+        sprite_path = f"sprites/stamina/stamina_{sprite_index}.png"
+        stamina_img = pygame.image.load(sprite_path).convert_alpha()
+        # Limitar el ancho a 100 px, mantener la altura original del sprite
+
+        stamina_img = pygame.transform.scale(stamina_img, (145, 48))
+        x, y = 50, hud_y + 5
+        self.screen.blit(stamina_img, (x, y))
 
     def draw_inventory(self, inventory, order=None):
         title = self.font_inventory.render("Inventario de trabajos aceptados", True, (255,255,0))
