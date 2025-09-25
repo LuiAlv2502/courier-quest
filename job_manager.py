@@ -7,12 +7,7 @@ class JobManager:
         # Liberar trabajos cuando (release_time - current_time) == 0
         nuevos_visibles = []
         for job in self.available_jobs:
-            release_time = job.release_time if hasattr(job, 'release_time') else 0
-            try:
-                release_time = int(release_time)
-            except (ValueError, TypeError):
-                release_time = 0
-            # El trabajo se libera cuando el tiempo restante llega a cero
+            release_time = job.get_release_time()
             tiempo_restante = release_time - current_time
             if job not in self.visible_jobs and tiempo_restante == 0:
                 nuevos_visibles.append(job)
