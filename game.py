@@ -7,6 +7,7 @@ from map import Map
 from stack import Stack
 import api
 from hud import HUD
+from weather import Weather
 
 class CourierQuestGame:
     def __init__(self):
@@ -42,6 +43,10 @@ class CourierQuestGame:
 
         self.hud = HUD(self.screen)
 
+        from weather import Weather
+        self.weather = Weather()
+
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -74,16 +79,19 @@ class CourierQuestGame:
                     if not self.character.resistencia_exhausto:
                         if event.key == pygame.K_LEFT:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
-                            self.character.movement(-1, 0, self.mapa)
+                            # --- PASAR weather a movement ---
+                            self.character.movement(-1, 0, self.mapa, weather=self.weather)
                         elif event.key == pygame.K_RIGHT:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
-                            self.character.movement(1, 0, self.mapa)
+                            self.character.movement(1, 0, self.mapa, weather=self.weather)
                         elif event.key == pygame.K_UP:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
-                            self.character.movement(0, -1, self.mapa)
+                            self.character.movement(0, -1, self.mapa, weather=self.weather)
                         elif event.key == pygame.K_DOWN:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
-                            self.character.movement(0, 1, self.mapa)
+                            self.character.movement(0, 1, self.mapa, weather=self.weather)
+                        elif event.key == pygame.K_z:
+                            prev_pos = self.move_stack.pop()
                         elif event.key == pygame.K_z:
                             prev_pos = self.move_stack.pop()
                             if prev_pos:
@@ -140,6 +148,9 @@ class CourierQuestGame:
             self.first_frame = False
         else:
             self.job_manager.update_visible_jobs(elapsed_seconds)
+
+        self.weather.update()
+
         # Pending job logic
         if not self.show_job_decision:
             for job in self.job_manager.visible_jobs:
@@ -149,6 +160,7 @@ class CourierQuestGame:
                         self.pending_job = job
                         self.show_job_decision = True
                         break
+
         # Recuperar resistencia SOLO cuando no hay teclas presionadas
         keys = pygame.key.get_pressed()
         if not self.show_job_decision:
@@ -184,7 +196,8 @@ class CourierQuestGame:
             self.character.draw(self.screen)
             tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
             tiempo_restante = max(0, int(self.tiempo_limite - tiempo_actual))
-            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=self.objetivo_valor, reputacion=self.character.reputacion)
+            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=self.objetivo_valor,
+                          reputacion=self.character.reputacion, weather=self.weather)
             if self.show_job_decision and self.pending_job:
                 self.hud.draw_job_decision(self.pending_job, self.job_decision_message)
             # Mensaje visual si hubo penalización por deadline

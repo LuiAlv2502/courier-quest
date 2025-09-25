@@ -170,7 +170,7 @@ class Character:
             self.resistencia_exhausto = False
 
 
-    def movement(self, dx, dy, mapa):
+    def movement(self, dx, dy, mapa, weather=None):
         """
         Mueve el personaje en la dirección (dx, dy) si no está exhausto y el tile destino no está bloqueado.
         Aplica multiplicadores de velocidad según peso, reputación, superficie y clima.
@@ -195,7 +195,10 @@ class Character:
             Mpeso = max(0.8, 1 - 0.03 * max(0, self.peso_total - 3))  # Penalización por peso
             Mrep = 1.03 if self.reputacion >= 90 else 1.0  # Bonus por reputación alta
             Msurface = mapa.get_surface_weight(nueva_x, nueva_y)  # Multiplicador por superficie
+
             Mclima = 1.0  # Multiplicador por clima (placeholder)
+            if weather:
+                Mclima = weather.current_multiplier  # penalización o bonus por clima
 
             velocidad = v0 * Mresistencia * Mpeso * Mrep * Msurface * Mclima
 
