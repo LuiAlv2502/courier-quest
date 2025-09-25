@@ -1,3 +1,4 @@
+
 import pygame
 import constants
 from character import Character
@@ -6,8 +7,11 @@ from job_manager import JobManager
 from map import Map
 from stack import Stack
 import api
+import pickle
+import os
 from hud import HUD
 from weather import Weather
+
 
 class CourierQuestGame:
     def __init__(self):
@@ -22,7 +26,53 @@ class CourierQuestGame:
         self.move_stack = Stack()
         self.first_frame = True
         self.tiempo_inicio = None
+        self.tiempo_juego_acumulado = 0  # Tiempo acumulado solo cuando no está pausado
+        self.tiempo_pausa_inicio = None
         self.last_deadline_penalty = False  
+        self.paused = False
+
+    # Método de carga eliminado
+    
+    def pause_menu(self):
+        # Guardar el momento en que se pausó
+        self.tiempo_pausa_inicio = pygame.time.get_ticks()
+        font = pygame.font.SysFont(None, 48)
+        small_font = pygame.font.SysFont(None, 32)
+        # Popup dimensions
+        popup_width = 400
+        popup_height = 300
+        popup_x = (constants.WIDTH_SCREEN - popup_width) // 2
+        popup_y = (constants.HEIGHT_SCREEN - popup_height) // 2
+        hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
+        hud_popup = pygame.transform.scale(hud_img, (popup_width, popup_height))
+        while self.paused:
+            # No oscurecer el fondo, solo dibujar el popup encima
+            self.screen.blit(hud_popup, (popup_x, popup_y))
+            title = font.render("PAUSA", True, (255, 255, 0))
+            self.screen.blit(title, (popup_x + 120, popup_y + 30))
+            save_text = small_font.render("[G] Guardar partida", True, (200, 255, 200))
+            resume_text = small_font.render("[C] Continuar", True, (200, 200, 255))
+            exit_text = small_font.render("[Q] Salir", True, (255, 100, 100))
+            self.screen.blit(save_text, (popup_x + 60, popup_y + 100))
+            self.screen.blit(resume_text, (popup_x + 60, popup_y + 150))
+            self.screen.blit(exit_text, (popup_x + 60, popup_y + 200))
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    self.paused = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_c:
+                        self.paused = False
+                        # Al continuar, sumar el tiempo que estuvo pausado
+                        if self.tiempo_pausa_inicio is not None:
+                            pausa_duracion = pygame.time.get_ticks() - self.tiempo_pausa_inicio
+                            self.tiempo_inicio += pausa_duracion
+                            self.tiempo_pausa_inicio = None
+                    elif event.key == pygame.K_q:
+                        self.running = False
+                        self.paused = False
+
 
     def init_pygame(self):
         pygame.init()
@@ -51,6 +101,9 @@ class CourierQuestGame:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.paused = True
+                self.pause_menu()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_i:
                     self.show_inventory = not self.show_inventory
@@ -141,7 +194,9 @@ class CourierQuestGame:
     def update_game_state(self):
         if self.tiempo_inicio is None:
             self.tiempo_inicio = pygame.time.get_ticks()
-        elapsed_seconds = int((pygame.time.get_ticks() - self.tiempo_inicio) / 1000)
+        # Calcular tiempo acumulado solo si no está pausado
+        self.tiempo_juego_acumulado = pygame.time.get_ticks() - self.tiempo_inicio
+        elapsed_seconds = int(self.tiempo_juego_acumulado / 1000)
         tiempo_restante = max(0, int(self.tiempo_limite - elapsed_seconds))
         if self.first_frame:
             self.job_manager.update_visible_jobs(0)
@@ -241,7 +296,7 @@ class CourierQuestGame:
         else:
             self.mapa.draw_map(self.screen)
             self.character.draw(self.screen)
-            tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
+            tiempo_actual = self.tiempo_juego_acumulado / 1000
             tiempo_restante = max(0, int(self.tiempo_limite - tiempo_actual))
             self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=self.objetivo_valor,
                           reputacion=self.character.reputacion, weather=self.weather)
@@ -262,17 +317,25 @@ class CourierQuestGame:
         if self.character.reputacion_derrota():
             self.hud.show_game_over(reason="Reputación demasiado baja")
             self.running = False
-        tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
+        tiempo_actual = self.tiempo_juego_acumulado / 1000
         if tiempo_actual >= self.tiempo_limite:
             self.hud.show_game_over(reason="Tiempo agotado")
             self.running = False
 
     def run(self):
+        clock = pygame.time.Clock()
         while self.running:
             self.handle_events()
-            self.update_game_state()
-            self.draw()
-            self.check_win_loss()
+            if not self.paused:
+                delta = clock.tick(constants.FPS)
+                if self.tiempo_inicio is None:
+                    self.tiempo_inicio = pygame.time.get_ticks()
+                self.tiempo_juego_acumulado += delta
+                self.update_game_state()
+                self.draw()
+                self.check_win_loss()
+            else:
+                clock.tick(constants.FPS)
         pygame.quit()
 
 if __name__ == "__main__":
