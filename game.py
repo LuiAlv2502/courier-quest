@@ -9,7 +9,7 @@ from stack import Stack
 import api
 import pickle
 import os
-from hud import HUD
+from UI import UI
 from weather import Weather
 
 
@@ -34,29 +34,9 @@ class CourierQuestGame:
     # Método de carga eliminado
     
     def pause_menu(self):
-        # Guardar el momento en que se pausó
         self.tiempo_pausa_inicio = pygame.time.get_ticks()
-        font = pygame.font.SysFont(None, 48)
-        small_font = pygame.font.SysFont(None, 32)
-        # Popup dimensions
-        popup_width = 400
-        popup_height = 300
-        popup_x = (constants.WIDTH_SCREEN - popup_width) // 2
-        popup_y = (constants.HEIGHT_SCREEN - popup_height) // 2
-        hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
-        hud_popup = pygame.transform.scale(hud_img, (popup_width, popup_height))
         while self.paused:
-            # No oscurecer el fondo, solo dibujar el popup encima
-            self.screen.blit(hud_popup, (popup_x, popup_y))
-            title = font.render("PAUSA", True, (255, 255, 0))
-            self.screen.blit(title, (popup_x + 120, popup_y + 30))
-            save_text = small_font.render("[G] Guardar partida", True, (200, 255, 200))
-            resume_text = small_font.render("[C] Continuar", True, (200, 200, 255))
-            exit_text = small_font.render("[Q] Salir", True, (255, 100, 100))
-            self.screen.blit(save_text, (popup_x + 60, popup_y + 100))
-            self.screen.blit(resume_text, (popup_x + 60, popup_y + 150))
-            self.screen.blit(exit_text, (popup_x + 60, popup_y + 200))
-            pygame.display.flip()
+            self.hud.show_pause_menu()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
@@ -64,7 +44,6 @@ class CourierQuestGame:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
                         self.paused = False
-                        # Al continuar, sumar el tiempo que estuvo pausado
                         if self.tiempo_pausa_inicio is not None:
                             pausa_duracion = pygame.time.get_ticks() - self.tiempo_pausa_inicio
                             self.tiempo_inicio += pausa_duracion
@@ -91,7 +70,7 @@ class CourierQuestGame:
         self.tiempo_limite = map_json.get("max_time", 120)
         self.objetivo_valor = map_json.get("goal", None)
 
-        self.hud = HUD(self.screen)
+        self.hud = UI(self.screen)
 
         from weather import Weather
         self.weather = Weather("json_files/city_weather.json")

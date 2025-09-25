@@ -192,7 +192,7 @@ class Character:
             # Multiplicadores de velocidad
             v0 = 3  # tiles por segundo
             Mresistencia = 1.0 if self.resistencia > 30 else 0.8  # Penalización por baja resistencia
-            Mpeso = max(0.8, 1 - 0.03 * max(0, self.peso_total - 3))  # Penalización por peso
+            Mpeso = max(0.8, 1 - 0.03 *  self.peso_total)  # Penalización por peso
             Mrep = 1.03 if self.reputacion >= 90 else 1.0  # Bonus por reputación alta
             Msurface = mapa.get_surface_weight(nueva_x, nueva_y)  # Multiplicador por superficie
 
@@ -202,16 +202,9 @@ class Character:
 
             velocidad = v0 * Mresistencia * Mpeso * Mrep * Msurface * Mclima
 
-            # Interpolación suave para animar el movimiento
             start_pos = self.shape.center
             end_pos = (nueva_x * self.tile_size + self.tile_size // 2,
                        nueva_y * self.tile_size + self.tile_size // 2 + self.top_bar_height)
-
-            pasos = max(1, int(5 / velocidad))
-            for i in range(1, pasos + 1):
-                interp_x = start_pos[0] + (end_pos[0] - start_pos[0]) * i / pasos
-                interp_y = start_pos[1] + (end_pos[1] - start_pos[1]) * i / pasos
-                self.shape.center = (interp_x, interp_y)
 
             # Actualiza la posición final
             self.tile_x = nueva_x
