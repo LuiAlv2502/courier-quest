@@ -1,4 +1,7 @@
-import json, time, random
+
+import json
+import time
+import random
 import pygame
 
 class Weather:

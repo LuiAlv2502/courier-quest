@@ -1,4 +1,7 @@
-# Clase Stack para historial de movimientos
+
+# Clase Stack para historial de movimientos (estructura tipo pila)
+# Permite deshacer movimientos del jugador (LIFO)
+
 class Stack:
     def __init__(self):
         self.items = []
@@ -9,6 +12,7 @@ class Stack:
     def pop(self):
         if self.items:
             return self.items.pop()
+
         return None
 
     def is_empty(self):

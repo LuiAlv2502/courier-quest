@@ -1,5 +1,5 @@
+
 import pygame
-import character
 import constants
 
 class UI:

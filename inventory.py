@@ -1,12 +1,16 @@
+
 import heapq
 
-import job
+# Inventario: gestiona los trabajos aceptados y recogidos por el jugador
+# Algoritmos clave:
+# - Heap Sort para filtrar por prioridad
+# - Insertion Sort para ordenar por deadline
 
 class Inventory:
     def __init__(self, max_weight):
         self.max_weight = max_weight
         self.jobs = []  # lista de Job aceptados
-        
+
     def pickup_job(self, job, character_pos, mapa=None):
         # Si el jugador está en el pickup (mismo tile), recoge el trabajo
         if character_pos == job.pickup:
@@ -20,8 +24,9 @@ class Inventory:
             self.remove_job(job.id)
             return True
         return False
-    
+
     def total_weight(self):
+        """Devuelve el peso total de los trabajos en el inventario."""
         return sum(job.weight for job in self.jobs)
 
     def accept_job(self, job):
@@ -58,4 +63,5 @@ class Inventory:
                 jobs_sorted[j + 1] = jobs_sorted[j]
                 j -= 1
             jobs_sorted[j + 1] = key_job
+
         return jobs_sorted

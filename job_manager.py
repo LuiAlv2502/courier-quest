@@ -1,3 +1,4 @@
+
 class JobManager:
     def __init__(self, jobs):
         self.available_jobs = jobs  # lista de Job
