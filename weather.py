@@ -91,3 +91,24 @@ class Weather:
             "burst_time": self.burst_time,
             "transitioning": self.transitioning
         }
+    
+    
+
+        def get_resistance_multiplier(self):
+            """
+            Devuelve el multiplicador de consumo de resistencia según el clima actual.
+            Climas adversos aumentan el consumo.
+            """
+            # Puedes ajustar estos valores según el balance que desees
+            resistance_multipliers = {
+                "clear": 1.0,
+                "clouds": 1.0,
+                "rain_light": 1.15,
+                "rain": 1.25,
+                "storm": 1.4,
+                "fog": 1.1,
+                "wind": 1.2,
+                "heat": 1.3,
+                "cold": 1.1
+            }
+            return resistance_multipliers.get(self.current_condition, 1.0)

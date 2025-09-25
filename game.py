@@ -109,7 +109,13 @@ class CourierQuestGame:
     def update_game_state(self):
         if self.tiempo_inicio is None:
             self.tiempo_inicio = pygame.time.get_ticks()
-        elapsed_seconds = int((pygame.time.get_ticks() - self.tiempo_inicio) / 1000)
+        current_ticks = pygame.time.get_ticks()
+        elapsed_seconds = int((current_ticks - self.tiempo_inicio) / 1000)
+        # Calcular delta_time en segundos
+        if not hasattr(self, 'last_frame_ticks'):
+            self.last_frame_ticks = current_ticks
+        delta_time = (current_ticks - self.last_frame_ticks) / 1000.0
+        self.last_frame_ticks = current_ticks
         tiempo_restante = max(0, int(self.tiempo_limite - elapsed_seconds))
         if self.first_frame:
             self.job_manager.update_visible_jobs(0)
@@ -117,7 +123,7 @@ class CourierQuestGame:
         else:
             self.job_manager.update_visible_jobs(elapsed_seconds)
 
-        self.weather.update()
+        self.weather.update(delta_time)
 
         # Pending job logic
         if not self.show_job_decision:

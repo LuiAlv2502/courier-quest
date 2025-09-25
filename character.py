@@ -84,7 +84,7 @@ class Character:
             self.resistencia = min(100, self.resistencia + 5 * segundos)
         print(self.resistencia)
 
-    def update_resistencia(self, mapa=None):
+    def update_resistencia(self, mapa=None, weather=None):
         """
         Actualiza la resistencia según el peso y el tipo de superficie.
         Si la resistencia llega a 0, activa exhausto.
@@ -95,10 +95,13 @@ class Character:
 
         if mapa:
             surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
+        clima_multiplier = 1.0
+        if weather:
+            clima_multiplier = weather.get_resistance_multiplier()
         # Imprime los pesos de los trabajos recogidos y el peso total
         recogidos = [job.weight for job in self.inventario.jobs if job.is_recogido()]
         print(f"Pesos recogidos: {recogidos}, Peso total: {self.peso_total}")
-        self.resistencia -= (base_consumo + peso_extra) * surface_multiplier
+        self.resistencia -= (base_consumo + peso_extra) * surface_multiplier * clima_multiplier
         self.resistencia = max(0, self.resistencia)
         # Si la resistencia llega a 0 o menos, activa exhausto
         if self.resistencia <= 0:
@@ -157,7 +160,7 @@ class Character:
             self.shape.center = end_pos
 
             # Actualiza resistencia y timestamp de movimiento
-            self.update_resistencia(mapa)
+            self.update_resistencia(mapa, weather)
             self.ultimo_movimiento = pygame.time.get_ticks()
             print(self.resistencia)
 
