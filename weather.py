@@ -1,4 +1,5 @@
 import json, time, random
+import pygame
 
 class Weather:
     def __init__(self, file):
@@ -25,7 +26,8 @@ class Weather:
         self.current_multiplier = self.multipliers[self.current_condition]
         self.intensity = data["initial"]["intensity"]
 
-        self.burst_time = random.randint(45, 60)
+        self.last_change_time = None
+        self.burst_interval = 45000  # 45 segundos en ms
         self.transitioning = False
         self.transition_duration = 0
         self.transition_time = 0
@@ -50,9 +52,13 @@ class Weather:
         #delta_time: tiempo transcurrido en segundos desde el último update
         
 
+        now = pygame.time.get_ticks()
+        if self.last_change_time is None:
+            self.last_change_time = now
+
         if not self.transitioning:
-            self.burst_time -= delta_time
-            if self.burst_time <= 0:
+            elapsed = now - self.last_change_time
+            if elapsed >= self.burst_interval:
                 # elige el siguiente clima
                 self.target_condition = self._next_condition()
                 self.intensity = self._generate_intensity()
@@ -65,6 +71,7 @@ class Weather:
                 self.transition_duration = random.uniform(3, 5)
                 self.transition_time = 0
                 self.transitioning = True
+                self.last_change_time = now
         else:
             # proceso de transición
             self.transition_time += delta_time
@@ -79,7 +86,7 @@ class Weather:
                 # finaliza transición
                 self.current_condition = self.target_condition
                 self.current_multiplier = self.target_multiplier
-                self.burst_time = random.randint(45, 60)
+                self.burst_time = 45
                 self.transitioning = False
 
     def get_status(self):

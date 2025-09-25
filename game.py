@@ -149,9 +149,54 @@ class CourierQuestGame:
         else:
             self.job_manager.update_visible_jobs(elapsed_seconds)
 
-        # Update weather every frame using delta_time
-        delta_time = 1 / constants.FPS
-        self.weather.update(delta_time)
+
+    def update_game_state(self):
+        if self.tiempo_inicio is None:
+            self.tiempo_inicio = pygame.time.get_ticks()
+        elapsed_seconds = int((pygame.time.get_ticks() - self.tiempo_inicio) / 1000)
+        tiempo_restante = max(0, int(self.tiempo_limite - elapsed_seconds))
+        if self.first_frame:
+            self.job_manager.update_visible_jobs(0)
+            self.first_frame = False
+        else:
+            self.job_manager.update_visible_jobs(elapsed_seconds)
+
+        # Actualizar clima usando delta_time fijo
+        self.weather.update(1 / constants.FPS)
+
+        # Lógica de trabajos pendientes
+        if not self.show_job_decision:
+            for job in self.job_manager.visible_jobs:
+                if job not in self.character.inventario.jobs:
+                    release_time = int(job.release_time)
+                    if elapsed_seconds >= release_time:
+                        self.pending_job = job
+                        self.show_job_decision = True
+                        break
+
+        # Recuperar resistencia SOLO cuando no hay teclas presionadas
+        keys = pygame.key.get_pressed()
+        if not self.show_job_decision:
+            if not (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]):
+                self.character.recuperar_resistencia(1 / constants.FPS)
+                if self.character.resistencia_exhausto and self.character.resistencia >= 30:
+                    self.character.resistencia_exhausto = False
+
+        # Eliminar trabajos cuyo deadline coincide con el timer del juego (hora y minuto)
+        minutos_juego = elapsed_seconds // 60
+        segundos_juego = elapsed_seconds % 60
+        for job in self.character.inventario.jobs[:]:
+            try:
+                tiempo_deadline = job.deadline.split('T')[1]
+                min_deadline = int(tiempo_deadline.split(':')[0])
+                sec_deadline = int(tiempo_deadline.split(':')[1])
+                if minutos_juego == min_deadline and segundos_juego == sec_deadline:
+                    self.character.inventario.remove_job(job.id)
+                    self.character.reputacion_expirar_paquete()
+                    self.last_deadline_penalty = True
+                    print(f"Job {job.id} removed due to deadline at {min_deadline}:{sec_deadline}. Current time: {minutos_juego}:{segundos_juego}")
+            except Exception:
+                continue
 
         # Pending job logic
         if not self.show_job_decision:
