@@ -44,7 +44,7 @@ class CourierQuestGame:
         self.hud = HUD(self.screen)
 
         from weather import Weather
-        self.weather = Weather()
+        self.weather = Weather("json_files/city_weather.json")
 
 
     def handle_events(self):
@@ -149,7 +149,9 @@ class CourierQuestGame:
         else:
             self.job_manager.update_visible_jobs(elapsed_seconds)
 
-        self.weather.update()
+        # Update weather every frame using delta_time
+        delta_time = 1 / constants.FPS
+        self.weather.update(delta_time)
 
         # Pending job logic
         if not self.show_job_decision:

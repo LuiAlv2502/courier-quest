@@ -7,7 +7,7 @@ class Weather:
         
         self.city = data["city"]
         self.conditions = data["conditions"]
-        self.transicion = data["transicion"]
+        self.transition = data["transition"]
 
         self.multipliers= {
             "clear": 1.0,
