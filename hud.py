@@ -36,10 +36,14 @@ class HUD:
         self.font_top = pygame.font.SysFont(None, 36)
         self.font_info = pygame.font.SysFont(None, 24)
         self.font_inventory = pygame.font.SysFont(None, 32)
+        # Load topbar background image
+        self.topbar_img = pygame.image.load("sprites/topbar.png").convert_alpha()
+        self.topbar_img = pygame.transform.scale(self.topbar_img, (constants.WIDTH_SCREEN, constants.TOP_BAR_HEIGHT))
 
     def draw_topbar(self, character, money_objective=None):
         top_bar_height = constants.TOP_BAR_HEIGHT
-        pygame.draw.rect(self.screen, (60, 60, 60), (0, 0, constants.WIDTH_SCREEN, top_bar_height))
+        # Draw topbar background image
+        self.screen.blit(self.topbar_img, (0, 0))
         dinero_ganado = character.get_score()
         if money_objective is not None:
             score_text = self.font_top.render(f"Puntuación: ${dinero_ganado} / ${money_objective}", True, (255, 255, 255))
