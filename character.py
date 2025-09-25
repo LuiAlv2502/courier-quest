@@ -17,7 +17,7 @@ class Character:
         self.screen = screen  # Superficie de dibujo
         self.tile_x = tile_x  # Posición X en tiles
         self.tile_y = tile_y  # Posición Y en tiles
-        self.reputacion = 100  # Reputación inicial
+        self.reputacion = 70  # Reputación inicial (punto 7)
         self.tile_size = tile_size  # Tamaño de cada tile
         self.resistencia = 100  # Resistencia inicial
         self.peso_total = 0  # Peso total de trabajos recogidos
@@ -37,6 +37,68 @@ class Character:
         self.inventario = Inventory(constants.MAX_WEIGHT)  # Inventario del jugador
         self.delay_recuperacion = 1000  # ms para recuperar resistencia
         self.score = 0  # Puntuación inicial
+        self.entregas_sin_penalizacion = 0  # Para rachas
+        self.racha_bonus_aplicado = False
+        self.primera_tardanza_aplicada = False
+    # --- Lógica de reputación y penalizaciones ---
+    def reputacion_multiplicador_pago(self):
+        """Multiplicador de pago por reputación alta (≥90)"""
+        return 1.05 if self.reputacion >= 90 else 1.0
+
+    def reputacion_derrota(self):
+        """Devuelve True si la reputación está en derrota (<20)"""
+        return self.reputacion < 20
+
+    def reputacion_entrega_a_tiempo(self):
+        self.reputacion = min(100, self.reputacion + 3)
+        self.entregas_sin_penalizacion += 1
+        self._check_racha_bonus()
+
+    def reputacion_entrega_temprana(self):
+        self.reputacion = min(100, self.reputacion + 5)
+        self.entregas_sin_penalizacion += 1
+        self._check_racha_bonus()
+
+    def reputacion_entrega_tarde(self, segundos_tarde):
+        # Primera tardanza del día a mitad de penalización si reputación ≥85
+        if not self.primera_tardanza_aplicada and self.reputacion >= 85:
+            self.primera_tardanza_aplicada = True
+            if segundos_tarde <= 30:
+                self.reputacion = max(0, self.reputacion - 1)
+            elif segundos_tarde <= 120:
+                self.reputacion = max(0, self.reputacion - 2.5)
+            else:
+                self.reputacion = max(0, self.reputacion - 5)
+        else:
+            if segundos_tarde <= 30:
+                self.reputacion = max(0, self.reputacion - 2)
+            elif segundos_tarde <= 120:
+                self.reputacion = max(0, self.reputacion - 5)
+            else:
+                self.reputacion = max(0, self.reputacion - 10)
+        self.entregas_sin_penalizacion = 0
+        self.racha_bonus_aplicado = False
+
+    def reputacion_cancelar_pedido(self):
+        self.reputacion = max(0, self.reputacion - 4)
+        self.entregas_sin_penalizacion = 0
+        self.racha_bonus_aplicado = False
+
+    def reputacion_expirar_paquete(self):
+        self.reputacion = max(0, self.reputacion - 6)
+        self.entregas_sin_penalizacion = 0
+        self.racha_bonus_aplicado = False
+
+    def _check_racha_bonus(self):
+        # Racha de 3 entregas sin penalización: +2 (una vez por racha)
+        if self.entregas_sin_penalizacion >= 3 and not self.racha_bonus_aplicado:
+            self.reputacion = min(100, self.reputacion + 2)
+            self.racha_bonus_aplicado = True
+
+    def reset_racha(self):
+        self.entregas_sin_penalizacion = 0
+        self.racha_bonus_aplicado = False
+        self.primera_tardanza_aplicada = False
 
     def get_score(self):
         """Devuelve la puntuación actual del jugador."""

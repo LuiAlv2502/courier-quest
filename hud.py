@@ -36,14 +36,15 @@ class HUD:
         self.font_top = pygame.font.SysFont(None, 36)
         self.font_info = pygame.font.SysFont(None, 24)
         self.font_inventory = pygame.font.SysFont(None, 32)
-        # Load topbar background image
-        self.topbar_img = pygame.image.load("sprites/topbar.png").convert_alpha()
-        self.topbar_img = pygame.transform.scale(self.topbar_img, (constants.WIDTH_SCREEN, constants.TOP_BAR_HEIGHT))
+    # Load HUD background image (used for topbar and navbar)
+        self.hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
+        self.hud_img_top = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, constants.TOP_BAR_HEIGHT))
+        self.hud_img_nav = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, 60))
 
     def draw_topbar(self, character, money_objective=None):
         top_bar_height = constants.TOP_BAR_HEIGHT
-        # Draw topbar background image
-        self.screen.blit(self.topbar_img, (0, 0))
+        # Draw HUD background image for topbar
+        self.screen.blit(self.hud_img_top, (0, 0))
         dinero_ganado = character.get_score()
         if money_objective is not None:
             score_text = self.font_top.render(f"Puntuación: ${dinero_ganado} / ${money_objective}", True, (255, 255, 255))
@@ -58,7 +59,8 @@ class HUD:
             hud_y = self.screen.get_height() - hud_height
         except Exception:
             hud_y = constants.HEIGHT_SCREEN - hud_height
-        pygame.draw.rect(self.screen, (40, 40, 40), (0, hud_y, constants.WIDTH_SCREEN, hud_height))
+        # Draw HUD background image for navbar
+        self.screen.blit(self.hud_img_nav, (0, hud_y))
         peso_actual = character.peso_total
         peso_text = self.font.render(f"Peso actual: {peso_actual}", True, (255, 255, 255))
         self.screen.blit(peso_text, (250, constants.HEIGHT_SCREEN - hud_height + 18))
@@ -135,14 +137,16 @@ class HUD:
         rect_height = 130
         rect_x = (constants.WIDTH_SCREEN - rect_width) // 2
         rect_y = (constants.HEIGHT_SCREEN - rect_height) // 2 - 25
-        pygame.draw.rect(self.screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height))
+        # Draw HUD sprite as background for decision window
+        hud_decision_img = pygame.transform.scale(self.hud_img, (rect_width, rect_height))
+        self.screen.blit(hud_decision_img, (rect_x, rect_y))
         if not pending_job:
             return
         font = pygame.font.SysFont(None, 32)
         job_text = font.render(f"Pedido: {pending_job.id} | Pago: ${pending_job.payout} | Peso: {pending_job.weight} | Prioridad: {pending_job.priority}", True, (255,255,255))
         rect = job_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2 - 40))
         self.screen.blit(job_text, rect)
-        info_text = font.render("[A] Aceptar   [N] Rechazar", True, (200,200,0))
+        info_text = font.render("[A] Aceptar   [N] Rechazar", True, (0,0,0))
         info_rect = info_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2))
         self.screen.blit(info_text, info_rect)
         if job_decision_message:

@@ -27,7 +27,7 @@ class CourierQuestGame:
         pygame.init()
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        api.api_request()
+        #api.api_request()
 
     def load_resources(self):
         self.mapa = Map("json_files/city_map.json", tile_size=25, top_bar_height=constants.TOP_BAR_HEIGHT)
@@ -66,7 +66,7 @@ class CourierQuestGame:
                             self.job_decision_message = "No puedes aceptar el pedido por peso. Debes rechazarlo (N)."
                     elif event.key == pygame.K_n:
                         self.job_manager.remove_job(self.pending_job.id)
-                        self.character.reputacion = max(0, self.character.reputacion - 10)
+                        self.character.reputacion_cancelar_pedido()
                         self.show_job_decision = False
                         self.pending_job = None
                         self.job_decision_message = ""
@@ -96,7 +96,39 @@ class CourierQuestGame:
                         if not job.is_recogido():
                             self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
                         else:
-                            self.character.process_dropoff(job)
+                            self._process_dropoff_with_reputation(job)
+
+    def _process_dropoff_with_reputation(self, job):
+        """
+        Procesa la entrega de un trabajo y actualiza la reputación y score según el tiempo de entrega.
+        """
+        entregado = self.character.inventario.deliver_job(job, (self.character.tile_x, self.character.tile_y))
+        if entregado:
+            # Calcular tiempo de entrega vs deadline
+            import datetime
+            try:
+                # Obtener tiempo actual y deadline
+                now = pygame.time.get_ticks()
+                elapsed_seconds = int((now - self.tiempo_inicio) / 1000)
+                tiempo_deadline = job.deadline.split('T')[1]
+                min_deadline = int(tiempo_deadline.split(':')[0])
+                sec_deadline = int(tiempo_deadline.split(':')[1])
+                deadline_seconds = min_deadline * 60 + sec_deadline
+                # Entrega temprana (≥20% antes)
+                if elapsed_seconds <= deadline_seconds - int(0.2 * deadline_seconds):
+                    self.character.reputacion_entrega_temprana()
+                # Entrega a tiempo
+                elif elapsed_seconds <= deadline_seconds:
+                    self.character.reputacion_entrega_a_tiempo()
+                # Entrega tarde
+                else:
+                    segundos_tarde = elapsed_seconds - deadline_seconds
+                    self.character.reputacion_entrega_tarde(segundos_tarde)
+            except Exception:
+                self.character.reputacion_entrega_a_tiempo()
+            # Multiplicador de pago por reputación
+            payout = int(job.payout * self.character.reputacion_multiplicador_pago())
+            self.character.score += payout
 
     def update_game_state(self):
         if self.tiempo_inicio is None:
@@ -126,18 +158,16 @@ class CourierQuestGame:
                     self.character.resistencia_exhausto = False
 
         # Eliminar trabajos cuyo deadline coincide con el timer del juego (hora y minuto)
-        # Timer empieza desde 0 y elimina trabajos cuando el timer en minutos iguala el minuto del deadline
         minutos_juego = elapsed_seconds // 60
         segundos_juego = elapsed_seconds % 60
-        jobs_to_remove = []
-        for job in self.character.inventario.jobs:
+        for job in self.character.inventario.jobs[:]:
             try:
                 tiempo_deadline = job.deadline.split('T')[1]
                 min_deadline = int(tiempo_deadline.split(':')[0])
                 sec_deadline = int(tiempo_deadline.split(':')[1])
                 if minutos_juego == min_deadline and segundos_juego == sec_deadline:
                     self.character.inventario.remove_job(job.id)
-                    self.character.reputacion = max(0, self.character.reputacion - 10)
+                    self.character.reputacion_expirar_paquete()
                     self.last_deadline_penalty = True
                     print(f"Job {job.id} removed due to deadline at {min_deadline}:{sec_deadline}. Current time: {minutos_juego}:{segundos_juego}")
             except Exception:
@@ -169,7 +199,7 @@ class CourierQuestGame:
         if self.character.score >= self.objetivo_valor:
             self.hud.show_victory()
             self.running = False
-        if self.character.reputacion < 30:
+        if self.character.reputacion_derrota():
             self.hud.show_game_over(reason="Reputación demasiado baja")
             self.running = False
         tiempo_actual = (pygame.time.get_ticks() - self.tiempo_inicio) / 1000
