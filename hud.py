@@ -37,7 +37,16 @@ class HUD:
         self.font_info = pygame.font.SysFont(None, 24)
         self.font_inventory = pygame.font.SysFont(None, 32)
 
-    def draw_topbar(self, character, money_objective=None):
+    def draw_weather(self, weather):
+        """Muestra el estado actual del clima en la barra superior."""
+        if not weather:
+            return
+        clima_text = self.font.render(
+            f"Clima: {weather.current_condition}", True, (135, 206, 250)
+        )
+        self.screen.blit(clima_text, (20, 10))
+
+    def draw_topbar(self, character, money_objective=None, weather= None):
         top_bar_height = constants.TOP_BAR_HEIGHT
         pygame.draw.rect(self.screen, (60, 60, 60), (0, 0, constants.WIDTH_SCREEN, top_bar_height))
         dinero_ganado = character.get_score()
@@ -47,6 +56,9 @@ class HUD:
             score_text = self.font_top.render(f"Puntuación: ${dinero_ganado}", True, (255, 255, 255))
         text_rect = score_text.get_rect(topleft=(constants.WIDTH_SCREEN // 2 + 30, top_bar_height // 2 - 10))
         self.screen.blit(score_text, text_rect)
+
+        if weather:
+            self.draw_weather(weather)
 
     def draw_downbar(self, character, tiempo_restante=None, reputacion=None):
         hud_height = 60
@@ -146,7 +158,7 @@ class HUD:
             msg_rect = msg_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2 + 40))
             self.screen.blit(msg_text, msg_rect)
 
-    def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None):
+    def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None):
         # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
         for job in character.inventario.jobs:
             # Solo mostrar pickup si no ha sido recogido
@@ -161,6 +173,6 @@ class HUD:
                 dropoff_pos = (dx * character.tile_size + character.tile_size // 2,
                               dy * character.tile_size + character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
                 pygame.draw.circle(self.screen, (255, 140, 0), dropoff_pos, character.tile_size // 3)
-        self.draw_topbar(character, money_objective)
+        self.draw_topbar(character, money_objective, weather)
         self.draw_downbar(character, tiempo_restante, reputacion)
         self.draw_resistencia(character)
