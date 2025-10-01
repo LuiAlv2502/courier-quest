@@ -104,6 +104,42 @@ class Character:
         """Devuelve la puntuación actual del jugador."""
         return self.score
     
+    def get_tile_x(self):
+        """Devuelve la posición X en tiles."""
+        return self.tile_x
+    
+    def get_tile_y(self):
+        """Devuelve la posición Y en tiles."""
+        return self.tile_y
+    
+    def get_reputacion(self):
+        """Devuelve la reputación actual."""
+        return self.reputacion
+    
+    def get_resistencia(self):
+        """Devuelve la resistencia actual."""
+        return self.resistencia
+    
+    def get_peso_total(self):
+        """Devuelve el peso total actual."""
+        return self.peso_total
+    
+    def get_entregas_sin_penalizacion(self):
+        """Devuelve el número de entregas sin penalización."""
+        return self.entregas_sin_penalizacion
+    
+    def get_racha_bonus_aplicado(self):
+        """Devuelve si el bonus de racha está aplicado."""
+        return self.racha_bonus_aplicado
+    
+    def get_primera_tardanza_aplicada(self):
+        """Devuelve si la primera tardanza ya fue aplicada."""
+        return self.primera_tardanza_aplicada
+    
+    def get_inventario(self):
+        """Devuelve el objeto inventario."""
+        return self.inventario
+    
     def pickup_job(self, job, mapa=None):
         """
         Intenta recoger un trabajo si el personaje está en el tile de pickup.

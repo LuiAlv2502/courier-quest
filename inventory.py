@@ -28,6 +28,18 @@ class Inventory:
     def total_weight(self):
         """Devuelve el peso total de los trabajos en el inventario."""
         return sum(job.weight for job in self.jobs)
+    
+    def get_max_weight(self):
+        """Devuelve el peso máximo del inventario."""
+        return self.max_weight
+    
+    def get_current_weight(self):
+        """Devuelve el peso actual del inventario."""
+        return self.total_weight()
+    
+    def get_jobs(self):
+        """Devuelve la lista de trabajos en el inventario."""
+        return self.jobs
 
     def accept_job(self, job):
         """Acepta un job si no excede el peso máximo."""

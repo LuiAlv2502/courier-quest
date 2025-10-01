@@ -4,30 +4,30 @@ import constants
 
 class UI:
     def show_pause_menu(self):
-        font = pygame.font.SysFont(None, 48)
-        small_font = pygame.font.SysFont(None, 32)
-        popup_width = 400
-        popup_height = 300
+        font = pygame.font.SysFont(None, 40)
+        small_font = pygame.font.SysFont(None, 28)
+        popup_width = 320
+        popup_height = 240
         popup_x = (constants.WIDTH_SCREEN - popup_width) // 2
         popup_y = (constants.HEIGHT_SCREEN - popup_height) // 2
         hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
         hud_popup = pygame.transform.scale(hud_img, (popup_width, popup_height))
         self.screen.blit(hud_popup, (popup_x, popup_y))
         title = font.render("PAUSA", True, (255, 255, 0))
-        self.screen.blit(title, (popup_x + 120, popup_y + 30))
+        self.screen.blit(title, (popup_x + 100, popup_y + 25))
         save_text = small_font.render("[G] Guardar partida", True, (200, 255, 200))
         resume_text = small_font.render("[C] Continuar", True, (200, 200, 255))
         exit_text = small_font.render("[Q] Salir", True, (255, 100, 100))
-        self.screen.blit(save_text, (popup_x + 60, popup_y + 100))
-        self.screen.blit(resume_text, (popup_x + 60, popup_y + 150))
-        self.screen.blit(exit_text, (popup_x + 60, popup_y + 200))
+        self.screen.blit(save_text, (popup_x + 50, popup_y + 80))
+        self.screen.blit(resume_text, (popup_x + 50, popup_y + 120))
+        self.screen.blit(exit_text, (popup_x + 50, popup_y + 160))
         pygame.display.flip()
     def show_game_over(self, reason="Tiempo agotado"):
         """Muestra la pantalla de Game Over con el motivo."""
         self.screen.fill((0, 0, 0))
-        font = pygame.font.SysFont(None, 72)
+        font = pygame.font.SysFont(None, 60)
         text = font.render("GAME OVER", True, (255, 0, 0))
-        reason_font = pygame.font.SysFont(None, 36)
+        reason_font = pygame.font.SysFont(None, 30)
         reason_text = reason_font.render(reason, True, (255, 255, 255))
         text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 - 40))
         reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 + 40))
@@ -39,9 +39,9 @@ class UI:
     def show_victory(self, reason="¡Has llegado al objetivo!"):
         """Muestra la pantalla de Victoria con el motivo."""
         self.screen.fill((0, 0, 0))
-        font = pygame.font.SysFont(None, 72)
+        font = pygame.font.SysFont(None, 60)
         text = font.render("VICTORIA", True, (0, 255, 0))
-        reason_font = pygame.font.SysFont(None, 36)
+        reason_font = pygame.font.SysFont(None, 30)
         reason_text = reason_font.render(reason, True, (255, 255, 255))
         text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 - 40))
         reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 + 40))
@@ -51,14 +51,14 @@ class UI:
         pygame.time.wait(2500)
     def __init__(self, screen):
         self.screen = screen
-        self.font = pygame.font.SysFont(None, 28)
-        self.font_top = pygame.font.SysFont(None, 36)
-        self.font_info = pygame.font.SysFont(None, 24)
-        self.font_inventory = pygame.font.SysFont(None, 32)
+        self.font = pygame.font.SysFont(None, 24)
+        self.font_top = pygame.font.SysFont(None, 30)
+        self.font_info = pygame.font.SysFont(None, 20)
+        self.font_inventory = pygame.font.SysFont(None, 26)
     # Load HUD background image (used for topbar and navbar)
         self.hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
         self.hud_img_top = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, constants.TOP_BAR_HEIGHT))
-        self.hud_img_nav = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, 60))
+        self.hud_img_nav = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, 55))
 
     def draw_weather(self, weather):
         """Muestra el estado actual del clima en la barra superior."""
@@ -85,7 +85,7 @@ class UI:
             self.draw_weather(weather)
 
     def draw_downbar(self, character, tiempo_restante=None, reputacion=None):
-        hud_height = 60
+        hud_height = 55
         try:
             hud_y = self.screen.get_height() - hud_height
         except Exception:
@@ -94,7 +94,7 @@ class UI:
         self.screen.blit(self.hud_img_nav, (0, hud_y))
         peso_actual = character.peso_total
         peso_text = self.font.render(f"Peso actual: {peso_actual}", True, (255, 255, 255))
-        self.screen.blit(peso_text, (250, constants.HEIGHT_SCREEN - hud_height + 18))
+        self.screen.blit(peso_text, (180, constants.HEIGHT_SCREEN - hud_height + 15))
         rep = reputacion if reputacion is not None else character.reputacion
         if rep >= 70:
             rep_color = (0, 200, 255)
@@ -103,20 +103,20 @@ class UI:
         else:
             rep_color = (255, 50, 50)
         rep_text = self.font.render(f"Reputación: {rep}", True, rep_color)
-        self.screen.blit(rep_text, (400, constants.HEIGHT_SCREEN - hud_height + 18))
+        self.screen.blit(rep_text, (300, constants.HEIGHT_SCREEN - hud_height + 15))
         if tiempo_restante is not None:
             minutos = int(tiempo_restante) // 60
             segundos = int(tiempo_restante) % 60
             timer_text = self.font.render(f"Tiempo: {minutos:02d}:{segundos:02d}", True, (255, 255, 255))
         else:
             timer_text = self.font.render("Tiempo: 00:00", True, (255, 255, 255))
-        self.screen.blit(timer_text, (600, constants.HEIGHT_SCREEN - hud_height + 18))
+        self.screen.blit(timer_text, (450, constants.HEIGHT_SCREEN - hud_height + 15))
         #info_text = self.font_info.render("[Z] Deshacer movimiento", True, (255, 255, 255))
         #info_rect = info_text.get_rect(topright=(constants.WIDTH_SCREEN - 20, 10))
         #self.screen.blit(info_text, info_rect)
 
     def draw_resistencia(self, character):
-        hud_height = 60
+        hud_height = 55
         try:
             hud_y = self.screen.get_height() - hud_height
         except Exception:
@@ -132,10 +132,9 @@ class UI:
                 sprite_index = 1
         sprite_path = f"sprites/stamina/stamina_{sprite_index}.png"
         stamina_img = pygame.image.load(sprite_path).convert_alpha()
-        # Limitar el ancho a 100 px, mantener la altura original del sprite
-
-        stamina_img = pygame.transform.scale(stamina_img, (145, 48))
-        x, y = 50, hud_y + 5
+        # Reducir el tamaño del sprite de stamina
+        stamina_img = pygame.transform.scale(stamina_img, (120, 40))
+        x, y = 40, hud_y + 5
         self.screen.blit(stamina_img, (x, y))
 
     def draw_inventory(self, inventory, order=None):
@@ -167,8 +166,8 @@ class UI:
         self.screen.blit(info_text, (50, y+20))
 
     def draw_job_decision(self, pending_job, job_decision_message=None):
-        rect_width = 600
-        rect_height = 130
+        rect_width = 480
+        rect_height = 110
         rect_x = (constants.WIDTH_SCREEN - rect_width) // 2
         rect_y = (constants.HEIGHT_SCREEN - rect_height) // 2 - 25
         # Draw HUD sprite as background for decision window
@@ -176,7 +175,7 @@ class UI:
         self.screen.blit(hud_decision_img, (rect_x, rect_y))
         if not pending_job:
             return
-        font = pygame.font.SysFont(None, 32)
+        font = pygame.font.SysFont(None, 28)
         job_text = font.render(f"Pedido: {pending_job.id} | Pago: ${pending_job.payout} | Peso: {pending_job.weight} | Prioridad: {pending_job.priority}", True, (255,255,255))
         rect = job_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2 - 40))
         self.screen.blit(job_text, rect)
