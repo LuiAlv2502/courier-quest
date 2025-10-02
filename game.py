@@ -11,6 +11,7 @@ from map import Map  # Clase para el mapa de la ciudad
 from stack import Stack  # Pila para movimientos del personaje (deshacer)
 from UI import UI  # Interfaz de usuario (HUD, menús)
 from SaveData import SaveData  # Guardado y carga de partidas
+import sys  # Para sys.exit()
 
 
 class CourierQuestGame:
@@ -53,8 +54,10 @@ class CourierQuestGame:
             self.hud.show_pause_menu()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    # Cerrar el juego completamente al presionar la X
                     self.running = False
                     self.paused = False
+                    return
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
                         self.paused = False
@@ -70,6 +73,10 @@ class CourierQuestGame:
                     elif event.key == pygame.K_q:
                         self.running = False
                         self.paused = False
+                        return
+            # Si en cualquier momento self.running es False, salir del menú de pausa
+            if not self.running:
+                return
 
     def save_game(self, slot_number=1):
         """
@@ -143,7 +150,17 @@ class CourierQuestGame:
         # Restaurar datos del inventario y trabajos
         inventory_data = components.get("inventory", {})
         jobs_data = inventory_data.get("jobs", [])
+        picked_jobs_data = inventory_data.get("picked_jobs", [])
+
+        # Cargar todos los trabajos
         self.character.inventario.jobs = [Job.from_dict(j) for j in jobs_data]
+
+        # Cargar trabajos recogidos (si existe la información)
+        if picked_jobs_data:
+            self.character.inventario.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
+        else:
+            # Compatibilidad con guardados antiguos: reconstruir picked_jobs desde jobs
+            self.character.inventario.picked_jobs = [job for job in self.character.inventario.jobs if job.is_recogido()]
 
         # Restaurar datos del job manager (usar clave correcta 'jobs')
         job_data = components.get("jobs", {})  # compat con esquema de guardado
@@ -206,7 +223,9 @@ class CourierQuestGame:
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # Solo cerrar el juego completamente, no ir a menú ni pausar
                 self.running = False
+                return
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.paused = True
                 self.pause_menu()
@@ -263,11 +282,15 @@ class CourierQuestGame:
                     # Intentar recoger o entregar trabajos si corresponde
                     for job in self.character.inventario.jobs[:]:
                         if not job.is_recogido():
-                            self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
+                            recogido = self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
+                            if recogido:
+                                self.character.update_stats()
                         else:
-                            self._process_dropoff_with_reputation(job)
+                            entregado = self._process_dropoff_with_reputacion(job)
+                            if entregado:
+                                self.character.update_stats()
 
-    def _process_dropoff_with_reputation(self, job):
+    def _process_dropoff_with_reputacion(self, job):
         """
         Procesa la entrega de un trabajo y actualiza la reputación y score según el tiempo de entrega.
         """
@@ -344,8 +367,9 @@ class CourierQuestGame:
         """
         Recupera la resistencia del personaje si está inactivo y no exhausto.
         """
-        if not self.character.resistencia_exhausto and not self.move_stack.is_moving():
-            self.character.recuperar_resistencia()
+        # Simplemente llamar al método de recuperación del personaje
+        # El personaje ya maneja la lógica de cuándo recuperar resistencia
+        self.character.recuperar_resistencia()
 
     def _remove_expired_jobs(self, elapsed_seconds):
         """
@@ -369,13 +393,26 @@ class CourierQuestGame:
         self._recover_stamina_if_idle()
         self._remove_expired_jobs(elapsed_seconds)
 
+        # Actualizar estadísticas del personaje continuamente
+        self.character.update_stats()
+
     def draw(self):
         """
         Dibuja el mapa, personaje y HUD/interfaz en pantalla.
         """
-        self.mapa.draw(self.screen)
+        tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
+        money_objective = self.objetivo_valor
+        reputacion = self.character.reputacion
+        self.mapa.draw_map(self.screen)
         self.character.draw(self.screen)
-        self.hud.draw(self.character, self.job_manager, self.weather, self.show_inventory, self.inventory_order, self.show_job_decision, self.job_decision_message)
+        # Dibuja HUD principal (topbar, downbar, resistencia, puntos de pickup/dropoff)
+        self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
+        # Si corresponde, dibuja inventario
+        if self.show_inventory:
+            self.hud.draw_inventory(self.character.inventario, order=self.inventory_order)
+        # Si corresponde, dibuja menú de decisión de trabajo
+        if self.show_job_decision:
+            self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
 
     def check_win_loss(self):
         """
@@ -432,7 +469,8 @@ class CourierQuestGame:
                 "job_decision_message": self.job_decision_message
             },
             "inventory": {
-                "jobs": [job.to_dict() for job in self.character.inventario.jobs]
+                "jobs": [job.to_dict() for job in self.character.inventario.jobs],
+                "picked_jobs": [job.to_dict() for job in self.character.inventario.picked_jobs]
             },
             "jobs": {
                 "available_jobs": [job.to_dict() for job in self.job_manager.available_jobs],
@@ -454,5 +492,8 @@ class CourierQuestGame:
                 self.check_win_loss()
             pygame.display.flip()
             clock.tick(constants.FPS)
+        # Cerrar Pygame y el proceso completamente al salir del bucle principal
+        pygame.quit()
+        sys.exit()
 
 # Fin de game.py

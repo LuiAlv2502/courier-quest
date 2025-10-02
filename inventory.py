@@ -8,12 +8,16 @@ import heapq
 class Inventory:
     def __init__(self, max_weight):
         self.max_weight = max_weight
-        self.jobs = []  # lista de Job aceptados
+        self.jobs = []  # lista de Job aceptados (todos)
+        self.picked_jobs = []  # lista de Job recogidos (solo los que están físicamente con el personaje)
 
     def pickup_job(self, job, character_pos, mapa=None):
         # Si el jugador está en el pickup (mismo tile), recoge el trabajo
         if character_pos == job.pickup:
             job.recogido = True
+            # Mover el trabajo a la lista de recogidos si no está ya ahí
+            if job not in self.picked_jobs:
+                self.picked_jobs.append(job)
             return True
         return False
 
@@ -25,24 +29,33 @@ class Inventory:
         return False
 
     def total_weight(self):
-        """Devuelve el peso total de los trabajos en el inventario."""
-        return sum(job.weight for job in self.jobs)
-    
+        """Devuelve el peso total de los trabajos recogidos en el inventario."""
+        return sum(job.weight for job in self.picked_jobs)
+
     def get_max_weight(self):
         """Devuelve el peso máximo del inventario."""
         return self.max_weight
     
     def get_current_weight(self):
-        """Devuelve el peso actual del inventario."""
+        """Devuelve el peso actual del inventario (solo trabajos recogidos)."""
         return self.total_weight()
     
+    def get_total_jobs_weight(self):
+        """Devuelve el peso total de todos los trabajos (recogidos y no recogidos)."""
+        return sum(job.weight for job in self.jobs)
+
     def get_jobs(self):
         """Devuelve la lista de trabajos en el inventario."""
         return self.jobs
 
+    def get_picked_jobs(self):
+        """Devuelve la lista de trabajos recogidos."""
+        return self.picked_jobs
+
     def accept_job(self, job):
         """Acepta un job si no excede el peso máximo."""
-        if self.total_weight() + job.weight <= self.max_weight:
+        # Usar get_total_jobs_weight() para considerar todos los trabajos (recogidos y no recogidos)
+        if self.get_total_jobs_weight() + job.weight <= self.max_weight:
             self.jobs.append(job)
             return True
         return False
@@ -52,8 +65,11 @@ class Inventory:
         pass
 
     def remove_job(self, job_id):
-        """Elimina un job por id."""
+        """Elimina un job por id de ambas listas."""
+        # Eliminar de la lista principal
         self.jobs = [job for job in self.jobs if job.id != job_id]
+        # Eliminar de la lista de recogidos
+        self.picked_jobs = [job for job in self.picked_jobs if job.id != job_id]
 
     def traverse(self, reverse=False):
         """Recorre el inventario hacia adelante o atrás."""

@@ -1,4 +1,3 @@
-
 import pygame  # Librería para gráficos y eventos
 import constants  # Constantes globales del juego
 from job import Job  # Clase para trabajos
@@ -160,10 +159,20 @@ class Character:
     
     def update_stats(self):
         """
-        Actualiza el peso total de trabajos recogidos.
+        Actualiza el peso total de trabajos recogidos usando el inventario.
         La puntuación se actualiza en process_dropoff.
         """
-        self.peso_total = sum(job.weight for job in self.inventario.jobs if job.is_recogido())
+        # Usar el método del inventario para obtener el peso actual
+        peso_anterior = self.peso_total
+        self.peso_total = self.inventario.total_weight()
+
+        # Debug: mostrar cambios en el peso solo cuando hay cambios significativos
+        if abs(peso_anterior - self.peso_total) > 0.01:  # Solo si hay cambio real
+            print(f"Peso actualizado: {peso_anterior} -> {self.peso_total}")
+            trabajos_recogidos = [f"Job {job.id} (peso: {job.weight})" for job in self.inventario.picked_jobs]
+            print(f"Trabajos recogidos: {trabajos_recogidos}")
+            print(f"Total trabajos en inventario: {len(self.inventario.jobs)}")
+            print(f"Trabajos físicamente recogidos: {len(self.inventario.picked_jobs)}")
 
     def add_score(self, payout):
         """Suma una cantidad a la puntuación."""
@@ -175,12 +184,17 @@ class Character:
 
     def recuperar_resistencia(self, segundos=1):
         """
-        Recupera resistencia si ha pasado suficiente tiempo desde el último movimiento.
+        Recupera resistencia automáticamente cuando el personaje está inactivo.
         """
         time = pygame.time.get_ticks()
-        if time - self.ultimo_movimiento >= self.delay_recuperacion:
-            self.resistencia = min(100, self.resistencia + 5 * segundos)
-        print(self.resistencia)
+        # Solo recuperar si ha pasado tiempo suficiente desde el último movimiento Y no está exhausto
+        if time - self.ultimo_movimiento >= self.delay_recuperacion and not self.resistencia_exhausto:
+            # Recuperar resistencia gradualmente
+            recovery_rate = 3  # puntos por segundo de recuperación
+            self.resistencia = min(100, self.resistencia + recovery_rate * segundos)
+            # Debug: mostrar recuperación solo cuando realmente sucede
+            if recovery_rate * segundos > 0:
+                print(f"Recuperando resistencia: {self.resistencia}")
 
     def update_resistencia(self, mapa=None):
         """
@@ -194,8 +208,8 @@ class Character:
         if mapa:
             surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
         # Imprime los pesos de los trabajos recogidos y el peso total
-        recogidos = [job.weight for job in self.inventario.jobs if job.is_recogido()]
-        print(f"Pesos recogidos: {recogidos}, Peso total: {self.peso_total}")
+        pesos_recogidos = [job.weight for job in self.inventario.picked_jobs]
+        print(f"Pesos recogidos: {pesos_recogidos}, Peso total: {self.peso_total}")
         self.resistencia -= (base_consumo + peso_extra) * surface_multiplier
         self.resistencia = max(0, self.resistencia)
         # Si la resistencia llega a 0 o menos, activa exhausto
@@ -252,3 +266,20 @@ class Character:
             self.ultimo_movimiento = pygame.time.get_ticks()
             print(self.resistencia)
 
+    def to_dict(self):
+        """
+        Devuelve un diccionario con el estado serializable del personaje para guardado/carga.
+        """
+        return {
+            "tile_x": self.tile_x,
+            "tile_y": self.tile_y,
+            "reputacion": self.reputacion,
+            "tile_size": self.tile_size,
+            "resistencia": self.resistencia,
+            "peso_total": self.peso_total,
+            "top_bar_height": self.top_bar_height,
+            "score": self.score,
+            "entregas_sin_penalizacion": self.entregas_sin_penalizacion,
+            "racha_bonus_aplicado": self.racha_bonus_aplicado,
+            "primera_tardanza_aplicada": self.primera_tardanza_aplicada
+        }

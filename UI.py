@@ -139,8 +139,19 @@ class UI:
         self.screen.blit(stamina_img, (x, y))
 
     def draw_inventory(self, inventory, order=None):
+        # Dimensiones de la ventana pop-up
+        popup_width = 600
+        popup_height = 400
+        popup_x = (constants.WIDTH_SCREEN - popup_width) // 2
+        popup_y = (constants.HEIGHT_SCREEN - popup_height) // 2
+        # Dibujar fondo negro semitransparente
+        popup_surface = pygame.Surface((popup_width, popup_height), pygame.SRCALPHA)
+        popup_surface.fill((0, 0, 0, 220))  # Negro con opacidad
+        self.screen.blit(popup_surface, (popup_x, popup_y))
+        # Título
         title = self.font_inventory.render("Inventario de trabajos aceptados", True, (255,255,0))
-        self.screen.blit(title, (50, 50))
+        self.screen.blit(title, (popup_x + 30, popup_y + 20))
+        # Orden
         if order == 'deadline':
             jobs = inventory.filter_by_deadline()
             order_text = self.font_inventory.render("Orden: Deadline (D)", True, (200,200,255))
@@ -150,9 +161,10 @@ class UI:
         else:
             jobs = inventory.jobs
             order_text = self.font_inventory.render("Orden: Default", True, (180,180,180))
-        self.screen.blit(order_text, (50, 90))
-        y = 130
-        max_width = constants.WIDTH_SCREEN - 100
+        self.screen.blit(order_text, (popup_x + 30, popup_y + 60))
+        # Listado de trabajos
+        y = popup_y + 100
+        max_width = popup_width - 60
         for job in jobs:
             text_raw = f"ID: {job.id} | Pago: ${job.payout} | Peso: {job.weight} | Prioridad: {job.priority} | Deadline: {job.deadline}"
             job_text = self.font_inventory.render(text_raw, True, (255,255,255))
@@ -161,10 +173,10 @@ class UI:
                 max_chars = int(max_width / avg_char_width)
                 text_raw = text_raw[:max_chars-3] + '...'
                 job_text = self.font_inventory.render(text_raw, True, (255,255,255))
-            self.screen.blit(job_text, (50, y))
+            self.screen.blit(job_text, (popup_x + 30, y))
             y += 40
         info_text = self.font_inventory.render("Presiona D para deadline, P para prioridad, I para cerrar", True, (255,200,100))
-        self.screen.blit(info_text, (50, y+20))
+        self.screen.blit(info_text, (popup_x + 30, y+20))
 
     def draw_job_decision(self, pending_job, job_decision_message=None):
         rect_width = 480
