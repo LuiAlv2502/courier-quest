@@ -1,4 +1,3 @@
-
 import os
 import sys
 import pygame
@@ -13,29 +12,31 @@ def main():
     
     # Inicializar Pygame
     pygame.init()
+    pygame.font.init()  # Asegura que el módulo de fuentes esté inicializado
+    print("[DEBUG] pygame y pygame.font inicializados correctamente")
     screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
     pygame.display.set_caption("Courier Quest")
     
     while True:
-        # Mostrar menú principal
         menu = MainMenu(screen)
         action = menu.run()
-        
         if action == "exit":
             break
         elif action == "new_game":
-            # Iniciar nueva partida
             game = CourierQuestGame()
             game.run()
         elif action == "load_game":
             # Cargar la partida única
-            game = CourierQuestGame()
-            if game.load_game(slot_number=1):
+            from SaveData import SaveData
+            save_system = SaveData()
+            game_state = save_system.load_game(slot_number=1)
+            if game_state:
+                game = CourierQuestGame(load_saved_game=True, saved_game_state=game_state)
                 game.run()
             else:
                 print("No se pudo cargar la partida")
                 # Volver al menú principal
-    
+    # Solo se llama a pygame.quit() y sys.exit() después de salir del bucle
     pygame.quit()
     sys.exit()
 

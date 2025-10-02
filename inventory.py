@@ -1,4 +1,3 @@
-
 import heapq
 
 # Inventario: gestiona los trabajos aceptados y recogidos por el jugador
@@ -61,9 +60,14 @@ class Inventory:
         return self.jobs[::-1] if reverse else self.jobs
 
     def filter_by_priority(self):
-        """Devuelve los jobs ordenados por prioridad (mayor primero) usando heap sort."""
-        # heapq.nlargest usa heap sort internamente
-        return heapq.nlargest(len(self.jobs), self.jobs, key=lambda job: job.priority)
+        """Devuelve los jobs ordenados por prioridad (mayor primero) usando un heap normal."""
+        heap = [(-job.priority, job) for job in self.jobs]
+        heapq.heapify(heap)
+        sorted_jobs = []
+        while heap:
+            _, job = heapq.heappop(heap)
+            sorted_jobs.append(job)
+        return sorted_jobs
 
     def filter_by_deadline(self):
         """Devuelve los jobs ordenados por deadline (más pronto primero) usando insertion sort."""

@@ -1,11 +1,13 @@
 import pygame
 import constants
-from save_data import SaveData
+from SaveData import SaveData
 
 class MainMenu:
     def __init__(self, screen):
         self.screen = screen
         self.save_system = SaveData()
+        if not pygame.font.get_init():
+            pygame.font.init()
         self.font_title = pygame.font.SysFont(None, 48)
         self.font_menu = pygame.font.SysFont(None, 32)
         self.font_info = pygame.font.SysFont(None, 24)
@@ -107,13 +109,17 @@ class MainMenu:
         running = True
         
         while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    return "exit"
-                
-                action = self.handle_input(event)
-                if action:
-                    return action
-            
-            self.draw()
-            clock.tick(60)
+            try:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return "exit"
+
+                    action = self.handle_input(event)
+                    if action:
+                        return action
+
+                self.draw()
+                clock.tick(60)
+            except pygame.error as e:
+                print(f"[ERROR] {e}")
+                return "exit"

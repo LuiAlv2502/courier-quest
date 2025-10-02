@@ -1,4 +1,3 @@
-
 import pygame
 import constants
 
@@ -51,6 +50,8 @@ class UI:
         pygame.time.wait(2500)
     def __init__(self, screen):
         self.screen = screen
+        if not pygame.font.get_init():
+            pygame.font.init()
         self.font = pygame.font.SysFont(None, 24)
         self.font_top = pygame.font.SysFont(None, 30)
         self.font_info = pygame.font.SysFont(None, 20)
