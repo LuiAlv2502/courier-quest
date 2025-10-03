@@ -32,26 +32,6 @@ class Inventory:
         """Devuelve el peso total de los trabajos recogidos en el inventario."""
         return sum(job.weight for job in self.picked_jobs)
 
-    def get_max_weight(self):
-        """Devuelve el peso máximo del inventario."""
-        return self.max_weight
-    
-    def get_current_weight(self):
-        """Devuelve el peso actual del inventario (solo trabajos recogidos)."""
-        return self.total_weight()
-    
-    def get_total_jobs_weight(self):
-        """Devuelve el peso total de todos los trabajos (recogidos y no recogidos)."""
-        return sum(job.weight for job in self.jobs)
-
-    def get_jobs(self):
-        """Devuelve la lista de trabajos en el inventario."""
-        return self.jobs
-
-    def get_picked_jobs(self):
-        """Devuelve la lista de trabajos recogidos."""
-        return self.picked_jobs
-
     def accept_job(self, job):
         """Acepta un job si no excede el peso máximo."""
         # Usar get_total_jobs_weight() para considerar todos los trabajos (recogidos y no recogidos)
@@ -103,3 +83,23 @@ class Inventory:
             jobs_sorted[j + 1] = key_job
 
         return jobs_sorted
+
+    def get_max_weight(self):
+        """Devuelve el peso máximo del inventario."""
+        return self.max_weight
+
+    def get_current_weight(self):
+        """Devuelve el peso actual del inventario (solo trabajos recogidos)."""
+        return self.total_weight()
+
+    def get_total_jobs_weight(self):
+        """Devuelve el peso total de todos los trabajos (recogidos y no recogidos)."""
+        return sum(job.weight for job in self.jobs)
+
+    def get_jobs(self):
+        """Devuelve la lista de trabajos en el inventario."""
+        return self.jobs
+
+    def get_picked_jobs(self):
+        """Devuelve la lista de trabajos recogidos."""
+        return self.picked_jobs

@@ -1,4 +1,5 @@
 class JobManager:
+    #cambiar job_managaer a una cola de prioridad
     def __init__(self, jobs):
         self.available_jobs = jobs  # lista de Job
         self.visible_jobs = []      # trabajos que se pueden mostrar/aceptar

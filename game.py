@@ -318,8 +318,6 @@ class CourierQuestGame:
                             self.character.movement(0, 1, self.mapa, weather=self.weather)
                         elif event.key == pygame.K_z:
                             prev_pos = self.move_stack.pop()
-                        elif event.key == pygame.K_z:
-                            prev_pos = self.move_stack.pop()
                             if prev_pos:
                                 self.character.tile_x, self.character.tile_y = prev_pos
                                 self.character.shape.center = (
