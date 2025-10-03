@@ -2,7 +2,7 @@ import os
 import sys
 import pygame
 import constants
-from game import CourierQuestGame
+import CourierQuestGame
 from main_menu import MainMenu
 
 def main():

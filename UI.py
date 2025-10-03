@@ -2,6 +2,20 @@ import pygame
 import constants
 
 class UI:
+    def __init__(self, screen):
+        self.screen = screen
+        if not pygame.font.get_init():
+            pygame.font.init()
+        self.font = pygame.font.SysFont(None, 24)
+        self.font_top = pygame.font.SysFont(None, 30)
+        self.font_info = pygame.font.SysFont(None, 20)
+        self.font_inventory = pygame.font.SysFont(None, 26)
+        # Load HUD background image (used for topbar and navbar)
+        self.hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
+        self.hud_img_top = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, constants.TOP_BAR_HEIGHT))
+        self.hud_img_nav = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, 55))
+
+
     def show_pause_menu(self):
         font = pygame.font.SysFont(None, 40)
         small_font = pygame.font.SysFont(None, 28)
@@ -21,6 +35,7 @@ class UI:
         self.screen.blit(resume_text, (popup_x + 50, popup_y + 120))
         self.screen.blit(exit_text, (popup_x + 50, popup_y + 160))
         pygame.display.flip()
+
     def show_game_over(self, reason="Tiempo agotado"):
         """Muestra la pantalla de Game Over con el motivo."""
         self.screen.fill((0, 0, 0))
@@ -48,19 +63,7 @@ class UI:
         self.screen.blit(reason_text, reason_rect)
         pygame.display.flip()
         pygame.time.wait(2500)
-    def __init__(self, screen):
-        self.screen = screen
-        if not pygame.font.get_init():
-            pygame.font.init()
-        self.font = pygame.font.SysFont(None, 24)
-        self.font_top = pygame.font.SysFont(None, 30)
-        self.font_info = pygame.font.SysFont(None, 20)
-        self.font_inventory = pygame.font.SysFont(None, 26)
-    # Load HUD background image (used for topbar and navbar)
-        self.hud_img = pygame.image.load("sprites/hud.png").convert_alpha()
-        self.hud_img_top = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, constants.TOP_BAR_HEIGHT))
-        self.hud_img_nav = pygame.transform.scale(self.hud_img, (constants.WIDTH_SCREEN, 55))
-
+        
     def draw_weather(self, weather):
         """Muestra el estado actual del clima en la barra superior."""
         if not weather:
