@@ -188,30 +188,32 @@ class Character:
         """
         time = pygame.time.get_ticks()
         # Solo recuperar si ha pasado tiempo suficiente desde el último movimiento Y no está exhausto
-        if time - self.ultimo_movimiento >= self.delay_recuperacion and not self.resistencia_exhausto:
+        if time - self.ultimo_movimiento >= self.delay_recuperacion:
             # Recuperar resistencia gradualmente
-            recovery_rate = 3  # puntos por segundo de recuperación
+            recovery_rate = 5  # puntos por segundo de recuperación
             self.resistencia = min(100, self.resistencia + recovery_rate * segundos)
             # Debug: mostrar recuperación solo cuando realmente sucede
+            if self.resistencia >= 30:
+                self.resistencia_exhausto = False
             if recovery_rate * segundos > 0:
                 print(f"Recuperando resistencia: {self.resistencia}")
 
-    def update_resistencia(self, mapa=None):
+    def update_resistencia(self, mapa=None, velocidad=1.0):
         """
         Actualiza la resistencia según el peso y el tipo de superficie.
         Si la resistencia llega a 0, activa exhausto.
         """
-        base_consumo = 0.5  # Consumo base por movimiento
-        peso_extra = max(0, self.peso_total - 3) * 0.2  # Penalización por peso
-        surface_multiplier = 1.0  # Multiplicador por superficie
-
         if mapa:
             surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
         # Imprime los pesos de los trabajos recogidos y el peso total
         pesos_recogidos = [job.weight for job in self.inventario.picked_jobs]
         print(f"Pesos recogidos: {pesos_recogidos}, Peso total: {self.peso_total}")
-        self.resistencia -= (base_consumo + peso_extra) * surface_multiplier
-        self.resistencia = max(0, self.resistencia)
+        if 10 <self.resistencia < 30:
+            self.resistencia -= max(0, velocidad * 0.8)
+        else:
+            self.resistencia -= max(0, velocidad)
+        if self.resistencia < 0:
+            self.resistencia = 0
         # Si la resistencia llega a 0 o menos, activa exhausto
         if self.resistencia <= 0:
             self.resistencia_exhausto = True
@@ -225,8 +227,8 @@ class Character:
         Mueve el personaje en la dirección (dx, dy) si no está exhausto y el tile destino no está bloqueado.
         Aplica multiplicadores de velocidad según peso, reputación, superficie y clima.
         """
-        # Bloquea movimiento si está exhausto
-        if self.resistencia_exhausto:
+        # Solo bloquea movimiento si self.resistencia_exhausto está activo y la resistencia es menor a 30
+        if self.resistencia_exhausto and self.resistencia < 30:
             return
 
         nueva_x = self.tile_x + dx
@@ -262,7 +264,7 @@ class Character:
             self.shape.center = end_pos
 
             # Actualiza resistencia y timestamp de movimiento
-            self.update_resistencia(mapa)
+            self.update_resistencia(mapa, velocidad)
             self.ultimo_movimiento = pygame.time.get_ticks()
             print(self.resistencia)
 

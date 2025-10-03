@@ -76,12 +76,18 @@ class Inventory:
         return self.jobs[::-1] if reverse else self.jobs
 
     def filter_by_priority(self):
-        """Devuelve los jobs ordenados por prioridad (mayor primero) usando un heap normal."""
-        heap = [(-job.priority, job) for job in self.jobs]
+        """Devuelve los jobs ordenados por prioridad (mayor primero) usando un heap.
+        Se agrega un desempate por id (o índice) para evitar comparar objetos Job directamente.
+        """
+        heap = []
+        for idx, job in enumerate(self.jobs):
+            tiebreaker = getattr(job, 'id', idx)
+            # Usamos prioridad negativa para que mayor prioridad salga primero
+            heap.append((-job.priority, tiebreaker, job))
         heapq.heapify(heap)
         sorted_jobs = []
         while heap:
-            _, job = heapq.heappop(heap)
+            _, _, job = heapq.heappop(heap)
             sorted_jobs.append(job)
         return sorted_jobs
 

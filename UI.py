@@ -138,7 +138,7 @@ class UI:
         x, y = 40, hud_y + 5
         self.screen.blit(stamina_img, (x, y))
 
-    def draw_inventory(self, inventory, order=None):
+    def draw_inventory(self, inventory, order=None, tiempo_limite=None):
         # Dimensiones de la ventana pop-up
         popup_width = 600
         popup_height = 400
@@ -164,17 +164,29 @@ class UI:
         self.screen.blit(order_text, (popup_x + 30, popup_y + 60))
         # Listado de trabajos
         y = popup_y + 100
-        max_width = popup_width - 60
+        max_width = popup_width - 45
+        # Fuente un poco más grande para los trabajos
+        small_job_font = pygame.font.SysFont(None, 22)
         for job in jobs:
-            text_raw = f"ID: {job.id} | Pago: ${job.payout} | Peso: {job.weight} | Prioridad: {job.priority} | Deadline: {job.deadline}"
-            job_text = self.font_inventory.render(text_raw, True, (255,255,255))
-            if job_text.get_width() > max_width:
-                avg_char_width = job_text.get_width() / len(text_raw)
-                max_chars = int(max_width / avg_char_width)
-                text_raw = text_raw[:max_chars-3] + '...'
-                job_text = self.font_inventory.render(text_raw, True, (255,255,255))
+            # Calcular deadline mostrado como (tiempo_limite - deadline_job)
+            deadline_display = str(job.deadline)
+            if tiempo_limite is not None:
+                try:
+                    time_part = str(job.deadline).split('T')[1] if 'T' in str(job.deadline) else str(job.deadline)
+                    mins = int(time_part.split(':')[0])
+                    secs = int(time_part.split(':')[1])
+                    deadline_secs = mins * 60 + secs
+                    restante = max(0, int(tiempo_limite) - deadline_secs)
+                    mm = restante // 60
+                    ss = restante % 60
+                    deadline_display = f"{mm:02d}:{ss:02d}"
+                except Exception:
+                    # Si falla el parseo, dejar el valor original
+                    deadline_display = str(job.deadline)
+            text_raw = f"ID: {job.id} | Pago: ${job.payout} | Peso: {job.weight} | Prioridad: {job.priority} | Deadline: {deadline_display}"
+            job_text = small_job_font.render(text_raw, True, (255,255,255))
             self.screen.blit(job_text, (popup_x + 30, y))
-            y += 40
+            y += 28  # Ajusta la separación para la nueva fuente
         info_text = self.font_inventory.render("Presiona D para deadline, P para prioridad, I para cerrar", True, (255,200,100))
         self.screen.blit(info_text, (popup_x + 30, y+20))
 
