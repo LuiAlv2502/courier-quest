@@ -11,9 +11,15 @@ class Inventory:
         self.jobs = []  # lista de Job aceptados (todos)
         self.picked_jobs = []  # lista de Job recogidos (solo los que están físicamente con el personaje)
 
+    def is_neighbor(self, pos1, pos2):
+        """Check if pos1 is the same or adjacent (including diagonals) to pos2."""
+        dx = abs(pos1[0] - pos2[0])
+        dy = abs(pos1[1] - pos2[1])
+        return (dx <= 1 and dy <= 1)
+
     def pickup_job(self, job, character_pos, mapa=None):
-        # Si el jugador está en el pickup (mismo tile), recoge el trabajo
-        if character_pos == job.pickup:
+        # Permitir recoger si el jugador está en el pickup o en un tile vecino
+        if self.is_neighbor(character_pos, job.pickup):
             job.recogido = True
             # Mover el trabajo a la lista de recogidos si no está ya ahí
             if job not in self.picked_jobs:
@@ -22,8 +28,8 @@ class Inventory:
         return False
 
     def deliver_job(self, job, character_pos, mapa=None):
-        # Si el jugador está en el dropoff (mismo tile), entrega el trabajo
-        if character_pos == job.dropoff and job.recogido:
+        # Si el jugador está en el dropoff (mismo tile o vecino), entrega el trabajo
+        if self.is_neighbor(character_pos, job.dropoff) and job.recogido:
             self.remove_job(job.id)
             return True
         return False

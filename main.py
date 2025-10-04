@@ -2,8 +2,8 @@ import os
 import sys
 import pygame
 import constants
-import CourierQuestGame
 from main_menu import MainMenu
+from CourierQuestGame import CourierQuestGame
 
 def main():
     # Cambiar al directorio donde está el script

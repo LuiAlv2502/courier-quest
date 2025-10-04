@@ -19,33 +19,7 @@ def nearest_accessible(tile, mapa):
                 queue.append((nx, ny, dist+1))
     return tile  # Si no encuentra accesible, regresa el original
 
-def load_jobs_with_accessible_points(jobs_json_path, mapa):
-    with open(jobs_json_path, "r", encoding="utf-8") as f:
-        jobs_data = json.load(f)["data"]
-    jobs_list = []
-    for job in jobs_data:
-        pickup = tuple(job["pickup"])
-        dropoff = tuple(job["dropoff"])
-        # Si pickup está bloqueado, mover al borde
-        if mapa.is_blocked(*pickup):
-            pickup = nearest_accessible(pickup, mapa)
-        # Si dropoff está bloqueado, mover al borde
-        if mapa.is_blocked(*dropoff):
-            dropoff = nearest_accessible(dropoff, mapa)
-        job_obj = Job(
-            id=job["id"],
-            pickup=pickup,
-            dropoff=dropoff,
-            payout=job["payout"],
-            deadline=job["deadline"],
-            weight=job["weight"],
-            priority=job["priority"],
-            release_time=job["release_time"]
-        )
-        jobs_list.append(job_obj)
-    return jobs_list
-
-def load_jobs_plain(jobs_json_path):
+def load_jobs(jobs_json_path):
     """
     Carga los trabajos tal cual están en el JSON, sin ajustar pickup/dropoff a tiles accesibles.
     Útil para pruebas rápidas o para validar el contenido del JSON sin lógica extra.
