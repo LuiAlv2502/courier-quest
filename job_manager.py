@@ -1,8 +1,19 @@
 class JobManager:
-    #cambiar job_managaer a una cola de prioridad
+    #cambiar job_managaer a una cola
     def __init__(self, jobs):
         self.available_jobs = jobs  # lista de Job
+        self.job_queue = []          # cola de trabajos
         self.visible_jobs = []      # trabajos que se pueden mostrar/aceptar
+    def add_job_to_queue(self, job):
+        self.job_queue.append(job)
+
+    def get_job_queue(self):
+        return self.job_queue
+    
+    def ordenar_jobs_por_tiempo(self):
+        # Ordenar los trabajos por release_time
+        self.available_jobs.sort(key=lambda job: job.get_release_time())
+
 
     def update_visible_jobs(self, current_time):
         # Liberar trabajos cuando el tiempo actual alcanza o supera el release_time
