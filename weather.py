@@ -1,4 +1,3 @@
-
 import json
 import time
 import random
@@ -30,7 +29,7 @@ class Weather:
         self.intensity = data["initial"]["intensity"]
 
         self.last_change_time = None
-        self.burst_interval = 45000  # 45 segundos en ms
+        self.burst_interval = random.randint(45000, 60000)  # 45-60 segundos en ms
         self.transitioning = False
         self.transition_duration = 0
         self.transition_time = 0
@@ -75,6 +74,7 @@ class Weather:
                 self.transition_time = 0
                 self.transitioning = True
                 self.last_change_time = now
+                self.burst_interval = random.randint(45000, 60000)  # Nuevo intervalo aleatorio para el próximo ciclo
         else:
             # proceso de transición
             self.transition_time += delta_time
@@ -89,7 +89,7 @@ class Weather:
                 # finaliza transición
                 self.current_condition = self.target_condition
                 self.current_multiplier = self.target_multiplier
-                self.burst_time = 45
+                self.burst_time = 60
                 self.transitioning = False
 
     def get_status(self):

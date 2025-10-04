@@ -1,4 +1,3 @@
-
 # Clase Stack para historial de movimientos (estructura tipo pila)
 # Permite deshacer movimientos del jugador (LIFO)
 
@@ -22,3 +21,9 @@ class Stack:
         if self.items:
             return self.items[-1]
         return None
+
+    def is_moving(self):
+        """
+        Devuelve True si hay movimientos en la pila (el jugador ha realizado movimientos que pueden deshacerse).
+        """
+        return not self.is_empty()

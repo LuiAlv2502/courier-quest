@@ -1,4 +1,3 @@
-
 import pygame  # Librería para gráficos y eventos
 import constants  # Constantes globales del juego
 from job import Job  # Clase para trabajos
@@ -104,6 +103,42 @@ class Character:
         """Devuelve la puntuación actual del jugador."""
         return self.score
     
+    def get_tile_x(self):
+        """Devuelve la posición X en tiles."""
+        return self.tile_x
+    
+    def get_tile_y(self):
+        """Devuelve la posición Y en tiles."""
+        return self.tile_y
+    
+    def get_reputacion(self):
+        """Devuelve la reputación actual."""
+        return self.reputacion
+    
+    def get_resistencia(self):
+        """Devuelve la resistencia actual."""
+        return self.resistencia
+    
+    def get_peso_total(self):
+        """Devuelve el peso total actual."""
+        return self.peso_total
+    
+    def get_entregas_sin_penalizacion(self):
+        """Devuelve el número de entregas sin penalización."""
+        return self.entregas_sin_penalizacion
+    
+    def get_racha_bonus_aplicado(self):
+        """Devuelve si el bonus de racha está aplicado."""
+        return self.racha_bonus_aplicado
+    
+    def get_primera_tardanza_aplicada(self):
+        """Devuelve si la primera tardanza ya fue aplicada."""
+        return self.primera_tardanza_aplicada
+    
+    def get_inventario(self):
+        """Devuelve el objeto inventario."""
+        return self.inventario
+    
     def pickup_job(self, job, mapa=None):
         """
         Intenta recoger un trabajo si el personaje está en el tile de pickup.
@@ -124,10 +159,20 @@ class Character:
     
     def update_stats(self):
         """
-        Actualiza el peso total de trabajos recogidos.
+        Actualiza el peso total de trabajos recogidos usando el inventario.
         La puntuación se actualiza en process_dropoff.
         """
-        self.peso_total = sum(job.weight for job in self.inventario.jobs if job.is_recogido())
+        # Usar el método del inventario para obtener el peso actual
+        peso_anterior = self.peso_total
+        self.peso_total = self.inventario.total_weight()
+
+        # Debug: mostrar cambios en el peso solo cuando hay cambios significativos
+        if abs(peso_anterior - self.peso_total) > 0.01:  # Solo si hay cambio real
+            print(f"Peso actualizado: {peso_anterior} -> {self.peso_total}")
+            trabajos_recogidos = [f"Job {job.id} (peso: {job.weight})" for job in self.inventario.picked_jobs]
+            print(f"Trabajos recogidos: {trabajos_recogidos}")
+            print(f"Total trabajos en inventario: {len(self.inventario.jobs)}")
+            print(f"Trabajos físicamente recogidos: {len(self.inventario.picked_jobs)}")
 
     def add_score(self, payout):
         """Suma una cantidad a la puntuación."""
@@ -139,29 +184,36 @@ class Character:
 
     def recuperar_resistencia(self, segundos=1):
         """
-        Recupera resistencia si ha pasado suficiente tiempo desde el último movimiento.
+        Recupera resistencia automáticamente cuando el personaje está inactivo.
         """
         time = pygame.time.get_ticks()
+        # Solo recuperar si ha pasado tiempo suficiente desde el último movimiento Y no está exhausto
         if time - self.ultimo_movimiento >= self.delay_recuperacion:
-            self.resistencia = min(100, self.resistencia + 5 * segundos)
-        print(self.resistencia)
+            # Recuperar resistencia gradualmente
+            recovery_rate = 5  # puntos por segundo de recuperación
+            self.resistencia = min(100, self.resistencia + recovery_rate * segundos)
+            # Debug: mostrar recuperación solo cuando realmente sucede
+            if self.resistencia >= 30:
+                self.resistencia_exhausto = False
+            if recovery_rate * segundos > 0:
+                print(f"Recuperando resistencia: {self.resistencia}")
 
-    def update_resistencia(self, mapa=None):
+    def update_resistencia(self, mapa=None, velocidad=1.0):
         """
         Actualiza la resistencia según el peso y el tipo de superficie.
         Si la resistencia llega a 0, activa exhausto.
         """
-        base_consumo = 0.5  # Consumo base por movimiento
-        peso_extra = max(0, self.peso_total - 3) * 0.2  # Penalización por peso
-        surface_multiplier = 1.0  # Multiplicador por superficie
-
         if mapa:
             surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
         # Imprime los pesos de los trabajos recogidos y el peso total
-        recogidos = [job.weight for job in self.inventario.jobs if job.is_recogido()]
-        print(f"Pesos recogidos: {recogidos}, Peso total: {self.peso_total}")
-        self.resistencia -= (base_consumo + peso_extra) * surface_multiplier
-        self.resistencia = max(0, self.resistencia)
+        pesos_recogidos = [job.weight for job in self.inventario.picked_jobs]
+        print(f"Pesos recogidos: {pesos_recogidos}, Peso total: {self.peso_total}")
+        if 10 <self.resistencia < 30:
+            self.resistencia -= max(0, velocidad * 0.8)
+        else:
+            self.resistencia -= max(0, velocidad)
+        if self.resistencia < 0:
+            self.resistencia = 0
         # Si la resistencia llega a 0 o menos, activa exhausto
         if self.resistencia <= 0:
             self.resistencia_exhausto = True
@@ -175,8 +227,8 @@ class Character:
         Mueve el personaje en la dirección (dx, dy) si no está exhausto y el tile destino no está bloqueado.
         Aplica multiplicadores de velocidad según peso, reputación, superficie y clima.
         """
-        # Bloquea movimiento si está exhausto
-        if self.resistencia_exhausto:
+        # Solo bloquea movimiento si self.resistencia_exhausto está activo y la resistencia es menor a 30
+        if self.resistencia_exhausto and self.resistencia < 30:
             return
 
         nueva_x = self.tile_x + dx
@@ -212,7 +264,24 @@ class Character:
             self.shape.center = end_pos
 
             # Actualiza resistencia y timestamp de movimiento
-            self.update_resistencia(mapa)
+            self.update_resistencia(mapa, velocidad)
             self.ultimo_movimiento = pygame.time.get_ticks()
             print(self.resistencia)
 
+    def to_dict(self):
+        """
+        Devuelve un diccionario con el estado serializable del personaje para guardado/carga.
+        """
+        return {
+            "tile_x": self.tile_x,
+            "tile_y": self.tile_y,
+            "reputacion": self.reputacion,
+            "tile_size": self.tile_size,
+            "resistencia": self.resistencia,
+            "peso_total": self.peso_total,
+            "top_bar_height": self.top_bar_height,
+            "score": self.score,
+            "entregas_sin_penalizacion": self.entregas_sin_penalizacion,
+            "racha_bonus_aplicado": self.racha_bonus_aplicado,
+            "primera_tardanza_aplicada": self.primera_tardanza_aplicada
+        }
