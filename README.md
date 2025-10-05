@@ -2,43 +2,100 @@
 
 Este documento describe las estructuras de datos y algoritmos más importantes usados en el código fuente de Courier Quest.
 
+## Controles del Juego
+
+### Movimiento del Personaje
+- **Flechas direccionales (←↑↓→):** Mueve al personaje por el mapa
+- **Z:** Deshacer último movimiento
+
+### Gestión de Trabajos
+- **A:** Aceptar trabajo pendiente
+- **N:** Rechazar trabajo pendiente
+
+### Inventario
+- **I:** Abrir/cerrar inventario de trabajos aceptados
+- **↑↓:** Navegar por los trabajos en el inventario
+- **D:** Ordenar trabajos por deadline (fecha límite)
+- **P:** Ordenar trabajos por prioridad
+- **C:** Cancelar trabajo seleccionado (-4 reputación)
+
+### Sistema de Pausa
+- **ESC:** Pausar el juego
+- **C:** Continuar partida (desde menú de pausa)
+- **G:** Guardar partida (desde menú de pausa)
+- **Q:** Salir del juego (desde menú de pausa)
+
+
+---
+
 ## Stack (stack.py)
 - **Propósito:** Historial de movimientos del jugador (deshacer movimientos).
 - **Estructura:** Implementación clásica de pila (stack) con métodos push, pop, peek, is_empty.
 - **Algoritmo:** LIFO (Last-In, First-Out) para almacenar y recuperar posiciones previas.
 
+### Mecánicas Automáticas
+- **Recoger trabajos:** Automático al estar en el punto de recogida o tile vecino
+- **Entregar trabajos:** Automático al estar en el punto de entrega o tile vecino
+- **Recuperación de resistencia:** Automática cuando el personaje está inmóvil
+
+---
+
 ## Inventario (inventory.py)
-- **Propósito:** Gestiona los trabajos aceptados y recogidos por el jugador.
-- **Estructura:** Lista de objetos Job, con métodos para aceptar, recoger, entregar y eliminar trabajos.
+- **Propósito:** Gestiona los trabajos aceptados y recogidos por el jugador con dos listas separadas.
+- **Estructura:** 
+  - `jobs[]`: Lista de todos los trabajos aceptados
+  - `picked_jobs[]`: Lista de trabajos físicamente recogidos por el personaje
+  - Sistema de peso máximo con validación
 - **Algoritmos:**
-  - **Heap Sort:** Para filtrar trabajos por prioridad (`filter_by_priority` usando `heapq.nlargest`).
-  - **Insertion Sort:** Para ordenar trabajos por deadline (`filter_by_deadline`).
+  - **Heap Sort:** Para filtrar trabajos por prioridad usando `heapq` con prioridades negativas
+  - **Insertion Sort:** Para ordenar trabajos por deadline (fecha límite)
+  - **Búsqueda lineal:** Para cancelación de trabajos por ID
+- **Funcionalidades:** Aceptar, recoger, entregar, cancelar trabajos, control de peso, detección de vecindad
 
 ## JobManager (job_manager.py)
-- **Propósito:** Controla los trabajos disponibles y visibles en el juego.
-- **Estructura:** Listas de trabajos disponibles y visibles. Métodos para liberar trabajos y eliminarlos.
-- **Algoritmo:** Liberación de trabajos basada en tiempo de release.
+- **Propósito:** Controla la liberación temporal de trabajos disponibles usando cola de prioridad.
+- **Estructura:** 
+  - `job_priority_queue[]`: Min-heap con tuplas (release_time, job_id, job)
+  - `visible_jobs[]`: Lista de trabajos disponibles para aceptar
+- **Algoritmo:** 
+  - **Priority Queue (Min-Heap):** Para liberar trabajos basado en `release_time`
+  - **Búsqueda y filtrado:** Para eliminar trabajos por ID
+- **Funcionalidades:** Liberación temporal automática, gestión de trabajos visibles
 
 ## Character (character.py)
-- **Propósito:** Representa al jugador, gestiona reputación, resistencia y lógica de penalizaciones/bonificaciones.
-- **Estructura:** Atributos para posición, reputación, inventario, resistencia, score, rachas, etc.
-- **Algoritmo:**
-  - Penalizaciones y bonificaciones de reputación según entregas, tardanzas, cancelaciones y rachas.
-  - Multiplicador de pago por reputación alta.
+- **Propósito:** Representa al jugador con sistema complejo de reputación, resistencia y estadísticas.
+- **Estructura:** 
+  - Atributos de posición (tile_x, tile_y), estadísticas (reputación, resistencia, score)
+  - Sistema de rachas y penalizaciones
+  - Inventario integrado, sistema de movimiento con multiplicadores
+- **Algoritmos:**
+  - **Sistema de reputación:** Cálculos condicionales para bonos/penalizaciones
+  - **Multiplicadores de velocidad:** Fórmula compleja basada en peso, clima, reputación
+  - **Gestión de rachas:** Seguimiento de entregas consecutivas sin penalizaciones
+- **Funcionalidades:** Movimiento inteligente, sistema de fatiga, bonificaciones por reputación alta (≥90)
 
 ## API y Caché (api.py)
-- **Propósito:** Descarga y almacena datos del juego desde la API, con sistema de caché offline.
-- **Estructura:** Archivos JSON en `json_files` y `api_cache`.
-- **Algoritmo:**
-  - Descarga datos con `requests.get`.
-  - Recupera la última versión cacheada si la API falla.
+- **Propósito:** Sistema modular de descarga y caché de datos de la API con fallback offline.
+- **Estructura:** 
+  - Funciones especializadas: `save_api_data()`, `load_from_cache()`, `get_latest_cache_file()`
+  - Archivos JSON en `json_files/` (principal) y `api_cache/` (con timestamp)
+- **Algoritmos:**
+  - **Ordenamiento por timestamp:** Para encontrar caché más reciente
+  - **Fallback automático:** API → caché más reciente → error
+  - **Timestamp con formato:** YYYYMMDD_HHMMSS para versionado de caché
+- **Funcionalidades:** Descarga de 3 endpoints, caché automático, recuperación offline
 
-## Constantes (constants.py)
-- **Propósito:** Define valores globales para el juego (tamaños, colores, límites, FPS).
-
-## main.py y game.py
-- **Propósito:** Inicializan y ejecutan el bucle principal del juego.
-- **Estructura:** Instancia de `CourierQuestGame` y ciclo de eventos, lógica de victoria/derrota.
+## CourierQuestGame (CourierQuestGame.py)
+- **Propósito:** Controlador principal del juego con gestión completa de estado y ciclo de vida.
+- **Estructura:**
+  - Variables de estado del juego (running, paused, show_inventory, selected_job_index)
+  - Sistemas integrados: Map, Character, JobManager, UI, Weather, SaveData
+  - Stack para deshacer movimientos
+- **Algoritmos:**
+  - **Event handling:** Procesamiento de eventos de teclado con estados múltiples
+  - **State management:** Guardado/carga de estado completo del juego
+  - **Game loop:** Actualización de lógica, rendering, detección win/loss
+- **Funcionalidades:** Menú de pausa, sistema de guardado binario, navegación de inventario, gestión temporal
 
 ---
 

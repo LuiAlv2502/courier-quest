@@ -56,6 +56,10 @@ class CourierQuestGame:
         Inicializa Pygame y la ventana principal del juego.
         """
         pygame.init()
+        pygame.mixer.init()
+        pygame.mixer.music.load('song/persona3.mp3')
+        pygame.mixer.music.set_volume(0.09)
+        pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
         api.api_request()
@@ -122,7 +126,6 @@ class CourierQuestGame:
         """
         Restaura el estado del juego desde los datos cargados (personaje, inventario, trabajos, tiempo, etc).
         """
-        from job import Job  # Importación local para evitar problemas de importación circular
         components = self.save_system.extract_game_components(game_state)
 
         self._restore_game_data(components["game"])
@@ -199,7 +202,7 @@ class CourierQuestGame:
 
     def _restore_job_manager_data(self, job_data):
         """Restaura los datos del gestor de trabajos (cola de prioridad y trabajos visibles)"""
-        from job import Job
+
 
         pending_jobs = self._load_pending_jobs(job_data)
         visible_jobs = self._load_visible_jobs(job_data)
@@ -432,9 +435,8 @@ class CourierQuestGame:
                                 self.character.update_stats()
                     # Solo intentar entregar trabajos que YA estaban recogidos antes de este frame
                     for job in [j for j in self.character.inventario.jobs if j.is_recogido()]:
-                        entregado = self._process_dropoff_with_reputacion(job)
-                        if entregado:
-                            self.character.update_stats()
+                        self._process_dropoff_with_reputacion(job)
+                        self.character.update_stats()
 
     def _process_dropoff_with_reputacion(self, job):
         """
@@ -496,7 +498,7 @@ class CourierQuestGame:
         """
         self.weather.update(1 / constants.FPS)
 
-    def _process_pending_jobs(self, elapsed_seconds):
+    def _process_pending_jobs(self):
         """
         Verifica si hay trabajos listos para ser aceptados y muestra el menú de decisión si corresponde.
         """
@@ -536,7 +538,7 @@ class CourierQuestGame:
         elapsed_seconds = self._get_elapsed_seconds()
         self._update_visible_jobs(elapsed_seconds)
         self._update_weather()
-        self._process_pending_jobs(elapsed_seconds)
+        self._process_pending_jobs()
         self._recover_stamina_if_idle()
         self._remove_expired_jobs(elapsed_seconds)
 
@@ -623,5 +625,7 @@ class CourierQuestGame:
             pygame.display.flip()
             clock.tick(constants.FPS)
         # Cerrar Pygame y el proceso completamente al salir del bucle principal
+        pygame.mixer.music.stop()
         pygame.quit()
+
         sys.exit()
