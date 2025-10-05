@@ -5,7 +5,6 @@ from inventory import Inventory  # Clase para el inventario
 
 
 
-# Clase principal del jugador/courier
 class Character:
     def __init__(self, tile_x, tile_y, tile_size, screen, top_bar_height=None):
         """
@@ -16,10 +15,10 @@ class Character:
         self.screen = screen  # Superficie de dibujo
         self.tile_x = tile_x  # Posición X en tiles
         self.tile_y = tile_y  # Posición Y en tiles
-        self.reputacion = 70  # Reputación inicial (punto 7)
+        self.reputation = 70  # Reputación inicial (punto 7)
         self.tile_size = tile_size  # Tamaño de cada tile
         self.resistencia = 100  # Resistencia inicial
-        self.peso_total = 0  # Peso total de trabajos recogidos
+        self.total_weight = 0  # Peso total de trabajos recogidos
         self.top_bar_height = top_bar_height if top_bar_height is not None else 0  # Altura HUD
         # Rectángulo que representa al personaje
         self.shape = pygame.Rect(
@@ -31,73 +30,199 @@ class Character:
         # Centrar el rectángulo en el tile
         self.shape.center = (tile_x * tile_size + tile_size // 2,
                              tile_y * tile_size + tile_size // 2 + self.top_bar_height)
-        self.ultimo_movimiento = 0  # Timestamp del último movimiento
+        self.last_movement = 0  # Timestamp del último movimiento
         self.resistencia_exhausto = False  # Bandera para bloqueo de movimiento por fatiga
-        self.inventario = Inventory(constants.MAX_WEIGHT)  # Inventario del jugador
+        self.inventory = Inventory(constants.MAX_WEIGHT)  # Inventario del jugador
         self.delay_recuperacion = 1000  # ms para recuperar resistencia
         self.score = 0  # Puntuación inicial
-        self.entregas_sin_penalizacion = 0  # Para rachas
-        self.racha_bonus_aplicado = False
-        self.primera_tardanza_aplicada = False
+        self.deliveres_without_penalization = 0  # Para rachas
+        self.streak_bonus_applied = False # Si ya se aplicó el bonus de racha
+        self.first_job_late_aplied = False # Si ya se aplicó la primera tardanza del día
+
+
     # --- Lógica de reputación y penalizaciones ---
-    def reputacion_multiplicador_pago(self):
+    def pay_multiplier_reputation(self):
         """Multiplicador de pago por reputación alta (≥90)"""
-        return 1.05 if self.reputacion >= 90 else 1.0
+        return 1.05 if self.reputation >= 90 else 1.0
 
-    def reputacion_derrota(self):
+    def loss_reputation(self):
         """Devuelve True si la reputación está en derrota (<20)"""
-        return self.reputacion < 20
+        return self.reputation < 20
 
-    def reputacion_entrega_a_tiempo(self):
-        self.reputacion = min(100, self.reputacion + 3)
-        self.entregas_sin_penalizacion += 1
-        self._check_racha_bonus()
+    def job_delivered_in_time_reputation(self):
+        """Entrega a tiempo: +3 reputación"""
+        self.reputation = min(100, self.reputation + 3)
+        self.deliveres_without_penalization += 1
+        self._check_bonus_streak()
 
-    def reputacion_entrega_temprana(self):
-        self.reputacion = min(100, self.reputacion + 5)
-        self.entregas_sin_penalizacion += 1
-        self._check_racha_bonus()
+    def job_delivered_early_reputation(self):
+        """Entrega temprana: +5 reputación"""
+        self.reputation = min(100, self.reputation + 5)
+        self.deliveres_without_penalization += 1
+        self._check_bonus_streak()
 
-    def reputacion_entrega_tarde(self, segundos_tarde):
-        # Primera tardanza del día a mitad de penalización si reputación ≥85
-        if not self.primera_tardanza_aplicada and self.reputacion >= 85:
-            self.primera_tardanza_aplicada = True
-            if segundos_tarde <= 30:
-                self.reputacion = max(0, self.reputacion - 1)
-            elif segundos_tarde <= 120:
-                self.reputacion = max(0, self.reputacion - 2.5)
+    def job_delivered_late_reputacion(self, seconds_late):
+        """Entrega tarde: penalización según tiempo tarde"""
+        if not self.first_job_late_aplied and self.reputation >= 85:
+            self.first_job_late_aplied = True
+            if seconds_late <= 30:
+                self.reputation = max(0, self.reputation - 1)
+            elif seconds_late <= 120:
+                self.reputation = max(0, self.reputation - 2.5)
             else:
-                self.reputacion = max(0, self.reputacion - 5)
+                self.reputation = max(0, self.reputation - 5)
         else:
-            if segundos_tarde <= 30:
-                self.reputacion = max(0, self.reputacion - 2)
-            elif segundos_tarde <= 120:
-                self.reputacion = max(0, self.reputacion - 5)
+            if seconds_late <= 30:
+                self.reputation = max(0, self.reputation - 2)
+            elif seconds_late <= 120:
+                self.reputation = max(0, self.reputation - 5)
             else:
-                self.reputacion = max(0, self.reputacion - 10)
-        self.entregas_sin_penalizacion = 0
-        self.racha_bonus_aplicado = False
+                self.reputation = max(0, self.reputation - 10)
+        self.deliveres_without_penalization = 0
+        self.streak_bonus_applied = False
 
-    def reputacion_cancelar_pedido(self):
-        self.reputacion = max(0, self.reputacion - 4)
-        self.entregas_sin_penalizacion = 0
-        self.racha_bonus_aplicado = False
+    def cancel_job_reputation(self):
+        """Cancelar trabajo: -4 reputación"""
+        self.reputation = max(0, self.reputation - 4)
+        self.deliveres_without_penalization = 0
+        self.streak_bonus_applied = False
 
-    def reputacion_expirar_paquete(self):
-        self.reputacion = max(0, self.reputacion - 6)
-        self.entregas_sin_penalizacion = 0
-        self.racha_bonus_aplicado = False
+    def job_expired_reputation(self):
+        """Job expirado: -6 reputación"""
+        self.reputation = max(0, self.reputation - 6)
+        self.deliveres_without_penalization = 0
+        self.streak_bonus_applied = False
 
-    def _check_racha_bonus(self):
+    def job_rejected_reputation(self):
+        """Rechazar pedido pendiente: -1 reputación (penalización leve)."""
+        self.reputation = max(0, self.reputation - 3)
+        self.deliveres_without_penalization = 0
+        self.streak_bonus_applied = False
+
+    def _check_bonus_streak(self):
+        """Verifica y aplica bonus por racha de entregas sin penalización."""
         # Racha de 3 entregas sin penalización: +2 (una vez por racha)
-        if self.entregas_sin_penalizacion >= 3 and not self.racha_bonus_aplicado:
-            self.reputacion = min(100, self.reputacion + 2)
-            self.racha_bonus_aplicado = True
+        if self.deliveres_without_penalization >= 3 and not self.streak_bonus_applied:
+            self.reputation = min(100, self.reputation + 2)
+            self.streak_bonus_applied = True
 
-    def reset_racha(self):
-        self.entregas_sin_penalizacion = 0
-        self.racha_bonus_aplicado = False
-        self.primera_tardanza_aplicada = False
+    def reset_streak(self):
+        """Resetea la racha de entregas sin penalización (usado al cambiar de día)."""
+        self.deliveres_without_penalization = 0
+        self.streak_bonus_applied = False
+        self.first_job_late_aplied = False
+
+    def pickup_job(self, job, mapa=None):
+        """
+        Intenta recoger un trabajo si el personaje está en el tile de pickup.
+        Devuelve True si lo recoge, False si no.
+        """
+        pos = (self.tile_x, self.tile_y)
+        return self.inventory.pickup_job(job, pos, mapa)
+
+    def process_dropoff(self, job):
+        """
+        Intenta entregar el trabajo en la posición actual.
+        Si se entrega, suma la recompensa a la puntuación.
+        """
+        delivered = self.inventory.deliver_job(job, (self.tile_x, self.tile_y))
+        if delivered:
+            self.score += job.payout
+        return delivered
+
+    def update_stats(self):
+        """
+        Actualiza el peso total de trabajos recogidos usando el inventario.
+        La puntuación se actualiza en process_dropoff.
+        """
+        self.total_weight = self.inventory.total_weight()
+
+
+    def add_score(self, payout):
+        """Suma una cantidad a la puntuación."""
+        self.score += payout
+
+    def draw(self, screen):
+        """Dibuja el personaje en la pantalla."""
+        pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
+
+    def restore_stamina(self, segundos=1):
+        """
+        Recupera resistencia automáticamente cuando el personaje está inactivo.
+        """
+        time = pygame.time.get_ticks()
+        # Solo recuperar si ha pasado tiempo suficiente desde el último movimiento Y no está exhausto
+        if time - self.last_movement >= self.delay_recuperacion:
+            # Recuperar resistencia gradualmente
+            recovery_rate = 5  # puntos por segundo de recuperación
+            self.resistencia = min(100, self.resistencia + recovery_rate * segundos)
+            # Debug: mostrar recuperación solo cuando realmente sucede
+            if self.resistencia >= 30:
+                self.resistencia_exhausto = False
+            if recovery_rate * segundos > 0:
+                print(f"Recuperando resistencia: {self.resistencia}")
+
+    def update_stamina(self, mapa=None, stamina=1.0):
+        """
+        Actualiza la resistencia según el peso y el tipo de superficie.
+        Si la resistencia llega a 0, activa exhausto.
+        """
+        if 10 < self.resistencia < 30:
+            self.resistencia -= max(0, stamina * 0.8)
+        else:
+            self.resistencia -= max(0, stamina)
+        if self.resistencia < 0:
+            self.resistencia = 0
+        # Si la resistencia llega a 0 o menos, activa exhausto
+        if self.resistencia <= 0:
+            self.resistencia_exhausto = True
+        # Si la bandera está activa y la resistencia sube a 30 o más, desactiva exhausto
+        if self.resistencia_exhausto and self.resistencia >= 30:
+            self.resistencia_exhausto = False
+
+    def movement(self, dx, dy, mapa, weather=None):
+        """
+        Mueve el personaje en la dirección (dx, dy) si no está exhausto y el tile destino no está bloqueado.
+        Aplica multiplicadores de velocidad según peso, reputación, superficie y clima.
+        """
+        # Solo bloquea movimiento si self.resistencia_exhausto está activo y la resistencia es menor a 30
+        if self.resistencia_exhausto and self.resistencia < 30:
+            return
+
+        nueva_x = self.tile_x + dx
+        nueva_y = self.tile_y + dy
+
+        min_y = 0
+        max_y = mapa.height - 1
+        if nueva_y < min_y or nueva_y > max_y:
+            return
+
+        if not mapa.is_blocked(nueva_x, nueva_y):
+            # Multiplicadores de velocidad
+            v0 = 3  # tiles por segundo
+            M_stamina = 1.0 if self.resistencia > 30 else 0.8  # Penalización por baja resistencia
+            M_weight = max(0.8, 1 - 0.03 * self.total_weight)  # Penalización por peso
+            M_reputation = 1.03 if self.reputation >= 90 else 1.0  # Bonus por reputación alta
+            M_surface = mapa.get_surface_weight(nueva_x, nueva_y)  # Multiplicador por superficie
+
+            M_weather = 1.0  # Multiplicador por clima (placeholder)
+            if weather:
+                M_weather = weather.current_multiplier  # penalización o bonus por clima
+
+            velocidad = v0 * M_stamina * M_weight * M_reputation * M_surface * M_weather
+
+            end_pos = (nueva_x * self.tile_size + self.tile_size // 2,
+                       nueva_y * self.tile_size + self.tile_size // 2 + self.top_bar_height)
+
+            # Actualiza la posición final
+            self.tile_x = nueva_x
+            self.tile_y = nueva_y
+            self.shape.center = end_pos
+
+            # Actualiza resistencia y timestamp de movimiento
+            self.update_stamina(mapa, velocidad)
+            self.last_movement = pygame.time.get_ticks()
+            print(self.resistencia)
 
     def get_score(self):
         """Devuelve la puntuación actual del jugador."""
@@ -113,7 +238,7 @@ class Character:
     
     def get_reputacion(self):
         """Devuelve la reputación actual."""
-        return self.reputacion
+        return self.reputation
     
     def get_resistencia(self):
         """Devuelve la resistencia actual."""
@@ -121,152 +246,24 @@ class Character:
     
     def get_peso_total(self):
         """Devuelve el peso total actual."""
-        return self.peso_total
+        return self.total_weight
     
     def get_entregas_sin_penalizacion(self):
         """Devuelve el número de entregas sin penalización."""
-        return self.entregas_sin_penalizacion
+        return self.deliveres_without_penalization
     
     def get_racha_bonus_aplicado(self):
         """Devuelve si el bonus de racha está aplicado."""
-        return self.racha_bonus_aplicado
+        return self.streak_bonus_applied
     
     def get_primera_tardanza_aplicada(self):
         """Devuelve si la primera tardanza ya fue aplicada."""
-        return self.primera_tardanza_aplicada
+        return self.first_job_late_aplied
     
     def get_inventario(self):
         """Devuelve el objeto inventario."""
-        return self.inventario
-    
-    def pickup_job(self, job, mapa=None):
-        """
-        Intenta recoger un trabajo si el personaje está en el tile de pickup.
-        Devuelve True si lo recoge, False si no.
-        """
-        pos = (self.tile_x, self.tile_y)
-        return self.inventario.pickup_job(job, pos, mapa)
-    
-    def process_dropoff(self, job):
-        """
-        Intenta entregar el trabajo en la posición actual.
-        Si se entrega, suma la recompensa a la puntuación.
-        """
-        entregado = self.inventario.deliver_job(job, (self.tile_x, self.tile_y))
-        if entregado:
-            self.score += job.payout
-        return entregado
-    
-    def update_stats(self):
-        """
-        Actualiza el peso total de trabajos recogidos usando el inventario.
-        La puntuación se actualiza en process_dropoff.
-        """
-        # Usar el método del inventario para obtener el peso actual
-        peso_anterior = self.peso_total
-        self.peso_total = self.inventario.total_weight()
+        return self.inventory
 
-        # Debug: mostrar cambios en el peso solo cuando hay cambios significativos
-        if abs(peso_anterior - self.peso_total) > 0.01:  # Solo si hay cambio real
-            print(f"Peso actualizado: {peso_anterior} -> {self.peso_total}")
-            trabajos_recogidos = [f"Job {job.id} (peso: {job.weight})" for job in self.inventario.picked_jobs]
-            print(f"Trabajos recogidos: {trabajos_recogidos}")
-            print(f"Total trabajos en inventario: {len(self.inventario.jobs)}")
-            print(f"Trabajos físicamente recogidos: {len(self.inventario.picked_jobs)}")
-
-    def add_score(self, payout):
-        """Suma una cantidad a la puntuación."""
-        self.score += payout
-
-    def draw(self, screen):
-        """Dibuja el personaje en la pantalla."""
-        pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
-
-    def recuperar_resistencia(self, segundos=1):
-        """
-        Recupera resistencia automáticamente cuando el personaje está inactivo.
-        """
-        time = pygame.time.get_ticks()
-        # Solo recuperar si ha pasado tiempo suficiente desde el último movimiento Y no está exhausto
-        if time - self.ultimo_movimiento >= self.delay_recuperacion:
-            # Recuperar resistencia gradualmente
-            recovery_rate = 5  # puntos por segundo de recuperación
-            self.resistencia = min(100, self.resistencia + recovery_rate * segundos)
-            # Debug: mostrar recuperación solo cuando realmente sucede
-            if self.resistencia >= 30:
-                self.resistencia_exhausto = False
-            if recovery_rate * segundos > 0:
-                print(f"Recuperando resistencia: {self.resistencia}")
-
-    def update_resistencia(self, mapa=None, velocidad=1.0):
-        """
-        Actualiza la resistencia según el peso y el tipo de superficie.
-        Si la resistencia llega a 0, activa exhausto.
-        """
-        if mapa:
-            surface_multiplier = mapa.get_surface_weight(self.tile_x, self.tile_y)
-        # Imprime los pesos de los trabajos recogidos y el peso total
-        pesos_recogidos = [job.weight for job in self.inventario.picked_jobs]
-        print(f"Pesos recogidos: {pesos_recogidos}, Peso total: {self.peso_total}")
-        if 10 <self.resistencia < 30:
-            self.resistencia -= max(0, velocidad * 0.8)
-        else:
-            self.resistencia -= max(0, velocidad)
-        if self.resistencia < 0:
-            self.resistencia = 0
-        # Si la resistencia llega a 0 o menos, activa exhausto
-        if self.resistencia <= 0:
-            self.resistencia_exhausto = True
-        # Si la bandera está activa y la resistencia sube a 30 o más, desactiva exhausto
-        if self.resistencia_exhausto and self.resistencia >= 30:
-            self.resistencia_exhausto = False
-
-
-    def movement(self, dx, dy, mapa, weather=None):
-        """
-        Mueve el personaje en la dirección (dx, dy) si no está exhausto y el tile destino no está bloqueado.
-        Aplica multiplicadores de velocidad según peso, reputación, superficie y clima.
-        """
-        # Solo bloquea movimiento si self.resistencia_exhausto está activo y la resistencia es menor a 30
-        if self.resistencia_exhausto and self.resistencia < 30:
-            return
-
-        nueva_x = self.tile_x + dx
-        nueva_y = self.tile_y + dy
-
-        # Limitar movimiento por el tamaño real del mapa
-        min_y = 0
-        max_y = mapa.height - 1
-        if nueva_y < min_y or nueva_y > max_y:
-            return
-
-        if not mapa.is_blocked(nueva_x, nueva_y):
-            # Multiplicadores de velocidad
-            v0 = 3  # tiles por segundo
-            Mresistencia = 1.0 if self.resistencia > 30 else 0.8  # Penalización por baja resistencia
-            Mpeso = max(0.8, 1 - 0.03 *  self.peso_total)  # Penalización por peso
-            Mrep = 1.03 if self.reputacion >= 90 else 1.0  # Bonus por reputación alta
-            Msurface = mapa.get_surface_weight(nueva_x, nueva_y)  # Multiplicador por superficie
-
-            Mclima = 1.0  # Multiplicador por clima (placeholder)
-            if weather:
-                Mclima = weather.current_multiplier  # penalización o bonus por clima
-
-            velocidad = v0 * Mresistencia * Mpeso * Mrep * Msurface * Mclima
-
-            start_pos = self.shape.center
-            end_pos = (nueva_x * self.tile_size + self.tile_size // 2,
-                       nueva_y * self.tile_size + self.tile_size // 2 + self.top_bar_height)
-
-            # Actualiza la posición final
-            self.tile_x = nueva_x
-            self.tile_y = nueva_y
-            self.shape.center = end_pos
-
-            # Actualiza resistencia y timestamp de movimiento
-            self.update_resistencia(mapa, velocidad)
-            self.ultimo_movimiento = pygame.time.get_ticks()
-            print(self.resistencia)
 
     def to_dict(self):
         """
@@ -275,13 +272,13 @@ class Character:
         return {
             "tile_x": self.tile_x,
             "tile_y": self.tile_y,
-            "reputacion": self.reputacion,
+            "reputacion": self.reputation,
             "tile_size": self.tile_size,
             "resistencia": self.resistencia,
-            "peso_total": self.peso_total,
+            "peso_total": self.total_weight,
             "top_bar_height": self.top_bar_height,
             "score": self.score,
-            "entregas_sin_penalizacion": self.entregas_sin_penalizacion,
-            "racha_bonus_aplicado": self.racha_bonus_aplicado,
-            "primera_tardanza_aplicada": self.primera_tardanza_aplicada
+            "entregas_sin_penalizacion": self.deliveres_without_penalization,
+            "racha_bonus_aplicado": self.streak_bonus_applied,
+            "primera_tardanza_aplicada": self.first_job_late_aplied
         }

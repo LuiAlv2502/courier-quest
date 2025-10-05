@@ -1,11 +1,14 @@
 # game.py
 # Archivo principal de lógica del juego Courier Quest
 # Contiene la clase CourierQuestGame y todos los métodos para gestionar el ciclo de juego, guardado, carga, eventos y lógica principal.
+import heapq
 
 import pygame  # Librería para gráficos y eventos
+
+import api
 import constants  # Constantes globales del juego
 from character import Character  # Clase del personaje principal
-from job_loader import load_jobs_with_accessible_points, load_jobs_plain  # Carga de trabajos desde JSON
+from job_loader import load_jobs  # Carga de trabajos desde JSON
 from job_manager import JobManager  # Gestión de trabajos disponibles y visibles
 from map import Map  # Clase para el mapa de la ciudad
 from stack import Stack  # Pila para movimientos del personaje (deshacer)
@@ -24,6 +27,7 @@ class CourierQuestGame:
         self.running = True  # Controla el bucle principal
         self.show_inventory = False  # Muestra/oculta inventario
         self.inventory_order = None  # Orden de inventario (por deadline o prioridad)
+        self.selected_job_index = 0  # Índice del trabajo seleccionado en el inventario
         self.pending_job = None  # Trabajo pendiente de aceptar/rechazar
         self.show_job_decision = False  # Muestra menú de decisión de trabajo
         self.job_decision_message = ""  # Mensaje de decisión de trabajo
@@ -47,6 +51,18 @@ class CourierQuestGame:
         else:
             self.load_resources()
 
+    def init_pygame(self):
+        """
+        Inicializa Pygame y la ventana principal del juego.
+        """
+        pygame.init()
+        pygame.mixer.init()
+        pygame.mixer.music.load('song/persona3.mp3')
+        pygame.mixer.music.set_volume(0.09)
+        pygame.mixer.music.play(loops=-1)
+        self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
+        pygame.display.set_caption("Courier Quest")
+        #api.api_request()
     
     def pause_menu(self):
         """
@@ -110,11 +126,20 @@ class CourierQuestGame:
         """
         Restaura el estado del juego desde los datos cargados (personaje, inventario, trabajos, tiempo, etc).
         """
-        from job import Job  # Importación local para evitar problemas de importación circular
         components = self.save_system.extract_game_components(game_state)
 
-        # Primero restaurar datos del juego para recuperar el tiempo acumulado
-        game_data = components["game"]
+        self._restore_game_data(components["game"])
+        self._restore_character_data(components["character"])
+        self._restore_inventory_data(components.get("inventory", {}))
+        self._restore_job_manager_data(components.get("jobs", {}))
+        # self._filter_accepted_jobs()
+
+        # Resetear cualquier trabajo pendiente mostrado por error
+        self.pending_job = None
+        print("Game state restored successfully")
+
+    def _restore_game_data(self, game_data):
+        """Restaura los datos generales del juego (tiempo, objetivos, etc.)"""
         self.tiempo_juego_acumulado = game_data.get("tiempo_juego_acumulado", 0)
         self.tiempo_limite = game_data.get("tiempo_limite", 120)
         self.objetivo_valor = game_data.get("objetivo_valor", None)
@@ -124,6 +149,10 @@ class CourierQuestGame:
         self.job_decision_message = game_data.get("job_decision_message", "")
 
         # Ajustar el inicio del tiempo para que el cronómetro continúe donde se guardó
+        self._adjust_game_time()
+
+    def _adjust_game_time(self):
+        """Ajusta el tiempo de inicio del juego para continuar desde donde se guardó"""
         try:
             now_ms = pygame.time.get_ticks()
             # tiempo_juego_acumulado está en milisegundos
@@ -132,86 +161,100 @@ class CourierQuestGame:
             # En caso de algún fallo, reiniciar el inicio para evitar crasheos
             self.tiempo_inicio = pygame.time.get_ticks()
 
-        # Restaurar datos del personaje
-        character_data = components["character"]
+    def _restore_character_data(self, character_data):
+        """Restaura los datos del personaje (posición, estadísticas, etc.)"""
         self.character.tile_x = character_data.get("tile_x", 0)
         self.character.tile_y = character_data.get("tile_y", 0)
-        self.character.reputacion = character_data.get("reputacion", 70)
+        self.character.reputation = character_data.get("reputacion", 70)
         self.character.resistencia = character_data.get("resistencia", 100)
-        self.character.peso_total = character_data.get("peso_total", 0)
+        self.character.total_weight = character_data.get("peso_total", 0)
         self.character.score = character_data.get("score", 0)
-        self.character.entregas_sin_penalizacion = character_data.get("entregas_sin_penalizacion", 0)
-        self.character.racha_bonus_aplicado = character_data.get("racha_bonus_aplicado", False)
-        self.character.primera_tardanza_aplicada = character_data.get("primera_tardanza_aplicada", False)
+        self.character.deliveres_without_penalizacion = character_data.get("entregas_sin_penalizacion", 0)
+        self.character.streak_bonus_applied = character_data.get("racha_bonus_aplicado", False)
+        self.character.first_job_late_aplied = character_data.get("primera_tardanza_aplicada", False)
         
         # Actualizar posición del personaje en pantalla
+        self._update_character_screen_position()
+
+    def _update_character_screen_position(self):
+        """Actualiza la posición visual del personaje en pantalla"""
         self.character.shape.center = (
             self.character.tile_x * self.character.tile_size + self.character.tile_size // 2,
             self.character.tile_y * self.character.tile_size + self.character.tile_size // 2 + self.character.top_bar_height
         )
-        
-        # Restaurar datos del inventario y trabajos
-        inventory_data = components.get("inventory", {})
+
+    def _restore_inventory_data(self, inventory_data):
+        """Restaura los datos del inventario (trabajos aceptados y recogidos)"""
+        from job import Job
+
         jobs_data = inventory_data.get("jobs", [])
         picked_jobs_data = inventory_data.get("picked_jobs", [])
 
         # Cargar todos los trabajos
-        self.character.inventario.jobs = [Job.from_dict(j) for j in jobs_data]
+        self.character.inventory.jobs = [Job.from_dict(j) for j in jobs_data]
 
         # Cargar trabajos recogidos (si existe la información)
         if picked_jobs_data:
-            self.character.inventario.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
+            self.character.inventory.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
         else:
             # Compatibilidad con guardados antiguos: reconstruir picked_jobs desde jobs
-            self.character.inventario.picked_jobs = [job for job in self.character.inventario.jobs if job.is_recogido()]
+            self.character.inventory.picked_jobs = [job for job in self.character.inventory.jobs if job.is_recogido()]
 
-        # Restaurar datos del job manager (usar clave correcta 'jobs')
-        job_data = components.get("jobs", {})  # compat con esquema de guardado
-        available_jobs = []
-        for j in job_data.get("available_jobs", []):
-            job = Job.from_dict(j)
-            # Soportar guardados antiguos con 'release_at' y los nuevos con 'release_time'
-            if "release_at" in j:
-                job.release_time = int(j["release_at"])  # segundos absolutos desde inicio
-            else:
-                job.release_time = int(j.get("release_time", job.release_time))
-            available_jobs.append(job)
-        visible_jobs = []
-        for j in job_data.get("visible_jobs", []):
-            job = Job.from_dict(j)
-            if "release_at" in j:
-                job.release_time = int(j["release_at"])  # segundos absolutos desde inicio
-            else:
-                job.release_time = int(j.get("release_time", job.release_time))
-            visible_jobs.append(job)
-        # Si no hay datos guardados de jobs, mantener los actuales cargados por load_resources
-        if available_jobs or visible_jobs:
-            self.job_manager = JobManager(available_jobs)
+    def _restore_job_manager_data(self, job_data):
+        """Restaura los datos del gestor de trabajos (cola de prioridad y trabajos visibles)"""
+
+
+        pending_jobs = self._load_pending_jobs(job_data)
+        visible_jobs = self._load_visible_jobs(job_data)
+
+        # Crear JobManager con trabajos pendientes
+        if pending_jobs or visible_jobs:
+            self.job_manager = JobManager(pending_jobs)
             self.job_manager.visible_jobs = visible_jobs
 
-        # Asegurar que trabajos ya aceptados no vuelvan a aparecer como disponibles/visibles
-        try:
-            accepted_ids = {job.id for job in self.character.inventario.jobs}
-            if hasattr(self, 'job_manager') and self.job_manager:
-                self.job_manager.available_jobs = [j for j in self.job_manager.available_jobs if j.id not in accepted_ids]
-                self.job_manager.visible_jobs = [j for j in self.job_manager.visible_jobs if j.id not in accepted_ids]
-        except Exception as e:
-            print(f"[WARN] No se pudo filtrar trabajos aceptados al restaurar: {e}")
+    def _load_pending_jobs(self, job_data):
+        """Carga trabajos pendientes desde datos guardados (soporta múltiples formatos)"""
+        from job import Job
+        pending_jobs = []
 
-        # Resetear cualquier trabajo pendiente mostrado por error
-        self.pending_job = None
+        # Cargar desde el nuevo formato (pending_jobs)
+        for j in job_data.get("pending_jobs", []):
+            job = Job.from_dict(j)
+            job.release_time = self._get_release_time_from_data(j)
+            pending_jobs.append(job)
 
-        print("Estado del juego restaurado correctamente")
+        # Compatibilidad: cargar desde formatos antiguos
+        for j in job_data.get("available_jobs", []):
+            job = Job.from_dict(j)
+            job.release_time = self._get_release_time_from_data(j)
+            pending_jobs.append(job)
 
+        for j in job_data.get("job_queue", []):
+            job = Job.from_dict(j)
+            job.release_time = self._get_release_time_from_data(j)
+            pending_jobs.append(job)
 
-    def init_pygame(self):
-        """
-        Inicializa Pygame y la ventana principal del juego.
-        """
-        pygame.init()
-        self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
-        pygame.display.set_caption("Courier Quest")
-        #api.api_request()
+        return pending_jobs
+
+    def _load_visible_jobs(self, job_data):
+        """Carga trabajos visibles desde datos guardados"""
+        from job import Job
+        visible_jobs = []
+
+        for j in job_data.get("visible_jobs", []):
+            job = Job.from_dict(j)
+            job.release_time = self._get_release_time_from_data(j)
+            visible_jobs.append(job)
+
+        return visible_jobs
+
+    def _get_release_time_from_data(self, job_data):
+        """Extrae el tiempo de liberación desde datos guardados (soporta formatos antiguos)"""
+        if "release_at" in job_data:
+            return int(job_data["release_at"])
+        else:
+            return int(job_data.get("release_time", 0))
+
 
     def load_resources(self, minimal=False):
         """
@@ -220,13 +263,7 @@ class CourierQuestGame:
         """
         self.mapa = Map("json_files/city_map.json", tile_size=20, top_bar_height=constants.TOP_BAR_HEIGHT)
         # Elegir cargador de trabajos
-        try:
-            #jobs_list = load_jobs_plain("json_files/city_jobs.json")
-            jobs_list = load_jobs_with_accessible_points("json_files/city_jobs.json", self.mapa)
-        except Exception as e:
-            # Fallback seguro: si falla el cargador con accesibilidad, usar el plano
-            print(f"[WARN] Falla cargando trabajos con accesibilidad ({e}). Usando cargador plano.")
-            jobs_list = load_jobs_plain("json_files/city_jobs.json")
+        jobs_list = load_jobs("json_files/city_jobs.json")
         self.job_manager = JobManager(jobs_list)
         if not minimal:
             self.character = Character(0,0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
@@ -254,11 +291,11 @@ class CourierQuestGame:
                 "job_decision_message": self.job_decision_message
             },
             "inventory": {
-                "jobs": [job.to_dict() for job in self.character.inventario.jobs],
-                "picked_jobs": [job.to_dict() for job in self.character.inventario.picked_jobs]
+                "jobs": [job.to_dict() for job in self.character.inventory.jobs],
+                "picked_jobs": [job.to_dict() for job in self.character.inventory.picked_jobs]
             },
             "jobs": {
-                "available_jobs": [job.to_dict() for job in self.job_manager.available_jobs],
+                "pending_jobs": [job.to_dict() for job in self.job_manager.get_pending_jobs()],
                 "visible_jobs": [job.to_dict() for job in self.job_manager.visible_jobs]
             },
             "weather": self.weather.to_dict() if hasattr(self.weather, "to_dict") else {}
@@ -280,24 +317,56 @@ class CourierQuestGame:
                 if event.key == pygame.K_i:
                     self.show_inventory = not self.show_inventory
                     self.inventory_order = None
+                    self.selected_job_index = 0  # Reset selection when opening/closing inventory
                 elif self.show_inventory:
+                    # Get current job list based on order
+                    if self.inventory_order == 'deadline':
+                        current_jobs = self.character.inventory.filter_by_deadline()
+                    elif self.inventory_order == 'priority':
+                        current_jobs = self.character.inventory.filter_by_priority()
+                    else:
+                        current_jobs = self.character.inventory.jobs
+
                     if event.key == pygame.K_d:
                         self.inventory_order = 'deadline'
+                        self.selected_job_index = 0  # Reset selection when changing order
                     elif event.key == pygame.K_p:
                         self.inventory_order = 'priority'
+                        self.selected_job_index = 0  # Reset selection when changing order
+                    elif event.key == pygame.K_UP:
+                        # Navigate up in job list
+                        if current_jobs:
+                            self.selected_job_index = (self.selected_job_index - 1) % len(current_jobs)
+                    elif event.key == pygame.K_DOWN:
+                        # Navigate down in job list
+                        if current_jobs:
+                            self.selected_job_index = (self.selected_job_index + 1) % len(current_jobs)
+                    elif event.key == pygame.K_c:
+                        # Cancel selected job
+                        if current_jobs and 0 <= self.selected_job_index < len(current_jobs):
+                            selected_job = current_jobs[self.selected_job_index]
+                            if self.character.inventory.cancel_job(selected_job.id):
+                                # Apply reputation penalty for canceling (accepted job)
+                                self.character.cancel_job_reputation()
+                                # Update character stats after cancellation
+                                self.character.update_stats()
+                                # Adjust selected index if needed
+                                if self.selected_job_index >= len(current_jobs) - 1:
+                                    self.selected_job_index = max(0, len(current_jobs) - 2)
                 elif self.show_job_decision and not self.show_inventory:
                     if event.key == pygame.K_a:
-                        if self.pending_job and self.character.inventario.accept_job(self.pending_job):
+                        if self.pending_job and self.character.inventory.accept_job(self.pending_job):
                             self.job_manager.remove_job(self.pending_job.id)
                             self.show_job_decision = False
                             self.pending_job = None
                             self.job_decision_message = ""
                         else:
-                            self.job_decision_message = "No puedes aceptar el pedido por peso. Debes rechazarlo (N)."
+                            self.job_decision_message = "You cannot accept this job due to weight. Please reject it (N)."
                     elif event.key == pygame.K_n:
                         if self.pending_job:
                             self.job_manager.remove_job(self.pending_job.id)
-                        self.character.reputacion_cancelar_pedido()
+                        # Apply small reputation penalty for rejecting a pending job
+                        self.character.job_rejected_reputation()
                         self.show_job_decision = False
                         self.pending_job = None
                         self.job_decision_message = ""
@@ -305,7 +374,6 @@ class CourierQuestGame:
                     if not self.character.resistencia_exhausto:
                         if event.key == pygame.K_LEFT:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
-                            # --- PASAR weather a movement ---
                             self.character.movement(-1, 0, self.mapa, weather=self.weather)
                         elif event.key == pygame.K_RIGHT:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
@@ -324,22 +392,22 @@ class CourierQuestGame:
                                     self.character.tile_x * self.character.tile_size + self.character.tile_size // 2,
                                     self.character.tile_y * self.character.tile_size + self.character.tile_size // 2 + constants.TOP_BAR_HEIGHT
                                 )
-                    # Intentar recoger o entregar trabajos si corresponde
-                    for job in self.character.inventario.jobs[:]:
+                    # Intentar recoger trabajos si corresponde
+                    for job in self.character.inventory.jobs[:]:
                         if not job.is_recogido():
-                            recogido = self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
+                            recogido = self.character.inventory.pickup_job(job, (self.character.tile_x, self.character.tile_y))
                             if recogido:
                                 self.character.update_stats()
-                        else:
-                            entregado = self._process_dropoff_with_reputacion(job)
-                            if entregado:
-                                self.character.update_stats()
+                    # Solo intentar entregar trabajos que ya estaban recogidos
+                    for job in [j for j in self.character.inventory.jobs if j.is_recogido()]:
+                        self._process_dropoff_with_reputacion(job)
+                        self.character.update_stats()
 
     def _process_dropoff_with_reputacion(self, job):
         """
         Procesa la entrega de un trabajo y actualiza la reputación y score según el tiempo de entrega.
         """
-        entregado = self.character.inventario.deliver_job(job, (self.character.tile_x, self.character.tile_y))
+        entregado = self.character.inventory.deliver_job(job, (self.character.tile_x, self.character.tile_y))
         if entregado:
             # Calcular tiempo de entrega vs deadline
             try:
@@ -352,18 +420,18 @@ class CourierQuestGame:
                 deadline_seconds = min_deadline * 60 + sec_deadline
                 # Entrega temprana (≥20% antes)
                 if elapsed_seconds <= deadline_seconds - int(0.2 * deadline_seconds):
-                    self.character.reputacion_entrega_temprana()
+                    self.character.job_delivered_early_reputation()
                 # Entrega a tiempo
                 elif elapsed_seconds <= deadline_seconds:
-                    self.character.reputacion_entrega_a_tiempo()
+                    self.character.job_delivered_in_time_reputation()
                 # Entrega tarde
                 else:
                     segundos_tarde = elapsed_seconds - deadline_seconds
-                    self.character.reputacion_entrega_tarde(segundos_tarde)
+                    self.character.job_delivered_late_reputacion(segundos_tarde)
             except Exception:
-                self.character.reputacion_entrega_a_tiempo()
+                self.character.job_delivered_in_time_reputation()
             # Multiplicador de pago por reputación
-            payout = int(job.payout * self.character.reputacion_multiplicador_pago())
+            payout = int(job.payout * self.character.pay_multiplier_reputation())
             self.character.score += payout
 
     def _init_time_if_needed(self):
@@ -395,18 +463,16 @@ class CourierQuestGame:
         """
         self.weather.update(1 / constants.FPS)
 
-    def _process_pending_jobs(self, elapsed_seconds):
+    def _process_pending_jobs(self):
         """
         Verifica si hay trabajos listos para ser aceptados y muestra el menú de decisión si corresponde.
         """
         if not self.show_job_decision:
             # Construir un set de IDs ya aceptados para evitar comparar por instancia
-            accepted_ids = {j.id for j in self.character.inventario.jobs}
+            accepted_ids = {j.id for j in self.character.inventory.jobs}
+            # Tomar el primer trabajo visible que no esté aceptado
             for job in self.job_manager.visible_jobs:
-                if job.id in accepted_ids:
-                    continue  # ya aceptado anteriormente
-                release_time = int(job.release_time)
-                if elapsed_seconds >= release_time:
+                if job.id not in accepted_ids:
                     self.pending_job = job
                     self.show_job_decision = True
                     break
@@ -415,18 +481,16 @@ class CourierQuestGame:
         """
         Recupera la resistencia del personaje si está inactivo y no exhausto.
         """
-        # Simplemente llamar al método de recuperación del personaje
-        # El personaje ya maneja la lógica de cuándo recuperar resistencia
-        self.character.recuperar_resistencia()
+        self.character.restore_stamina()
 
     def _remove_expired_jobs(self, elapsed_seconds):
         """
         Elimina trabajos expirados del inventario y aplica penalización.
         """
-        expired_jobs = [job for job in self.character.inventario.jobs if job.is_expired(elapsed_seconds)]
+        expired_jobs = [job for job in self.character.inventory.jobs if job.is_expired(elapsed_seconds)]
         for job in expired_jobs:
-            self.character.inventario.remove_job(job)
-            self.character.reputacion_expirar_paquete()
+            self.character.inventory.remove_job(job)
+            self.character.job_expired_reputation()
             self.last_deadline_penalty = True
 
     def update_game_state(self):
@@ -437,7 +501,7 @@ class CourierQuestGame:
         elapsed_seconds = self._get_elapsed_seconds()
         self._update_visible_jobs(elapsed_seconds)
         self._update_weather()
-        self._process_pending_jobs(elapsed_seconds)
+        self._process_pending_jobs()
         self._recover_stamina_if_idle()
         self._remove_expired_jobs(elapsed_seconds)
 
@@ -448,38 +512,30 @@ class CourierQuestGame:
         """
         Dibuja todos los elementos del juego en pantalla: mapa, personaje, HUD, inventario, etc.
         """
-        reputacion = self.character.reputacion
+        reputacion = self.character.reputation
         # Verifica condiciones de victoria (score objetivo) o derrota (reputación o tiempo agotado)
         if self.character.score >= self.objetivo_valor:
+            # Calcular puntaje final y mostrar victoria con detalles
+            score_data = self.calculate_final_score()
             self.running = False
-            self.hud.show_victory()
-        elif self.character.reputacion < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
+            self.hud.show_victory_with_final_score(score_data)
+        elif self.character.reputation < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
             self.running = False
-            self.hud.show_game_over(reason="Reputación baja" if self.character.reputacion < 20 else "Tiempo agotado")
-        self.mapa.draw_map(self.screen)
-        self.character.draw(self.screen)
-        # Definir variables requeridas para HUD
-        tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
-        money_objective = self.objetivo_valor
-        # Dibuja HUD principal (topbar, downbar, resistencia, puntos de pickup/dropoff)
-        self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
-        # Si corresponde, dibuja inventario
-        if self.show_inventory:
-            self.hud.draw_inventory(self.character.inventario, order=self.inventory_order, tiempo_limite=self.tiempo_limite)
-        # Si corresponde, dibuja menú de decisión de trabajo
-        if self.show_job_decision:
-            self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
-
-    def check_win_loss(self):
-        """
-        Verifica condiciones de victoria (score objetivo) o derrota (reputación o tiempo agotado).
-        """
-        if self.character.score >= self.objetivo_valor:
-            print("¡Has ganado!")
-            self.running = False
-        elif self.character.reputacion < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
-            print("Has perdido.")
-            self.running = False
+            self.hud.show_game_over(reason="Low reputation" if self.character.reputation < 20 else "Time is up")
+        else:
+            self.mapa.draw_map(self.screen)
+            self.character.draw(self.screen)
+            # Definir variables requeridas para HUD
+            tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
+            money_objective = self.objetivo_valor
+            # Dibuja HUD principal (topbar, downbar, resistencia, puntos de pickup/dropoff)
+            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
+            # Si corresponde, dibuja inventario
+            if self.show_inventory:
+                self.hud.draw_inventory(self.character.inventory, order=self.inventory_order, tiempo_limite=self.tiempo_limite, selected_job_index=self.selected_job_index)
+            # Si corresponde, dibuja menú de decisión de trabajo
+            if self.show_job_decision:
+                self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
 
     # Métodos getter para exponer información relevante del estado del juego
     def get_tiempo_juego_acumulado(self):
@@ -509,6 +565,42 @@ class CourierQuestGame:
     def get_weather(self):
         return self.weather
 
+    def calculate_final_score(self):
+        """
+        Calcula el puntaje final según la fórmula:
+        score_base = suma de pagos * pay_mult (por reputación alta)
+        bonus_tiempo = +X si terminas antes del 20% del tiempo restante
+        score = score_base + bonus_tiempo - penalizaciones
+        """
+        # Score base con multiplicador de reputación
+        pay_mult = self.character.pay_multiplier_reputation()
+        score_base = int(self.character.score * pay_mult)
+
+        # Bonus por tiempo (si termina antes del 20% del tiempo restante)
+        elapsed_seconds = self._get_elapsed_seconds()
+        tiempo_restante = self.tiempo_limite - elapsed_seconds
+        twenty_percent_time = self.tiempo_limite * 0.2
+
+        bonus_tiempo = 0
+        if tiempo_restante >= twenty_percent_time:
+            # Bonus proporcional al tiempo restante (máximo 500 puntos)
+            bonus_percentage = tiempo_restante / self.tiempo_limite
+            bonus_tiempo = int(500 * bonus_percentage)
+
+        # Penalizaciones (se pueden expandir en el futuro)
+
+        # Score final
+        final_score = score_base + bonus_tiempo
+
+        return {
+            "score_base": score_base,
+            "pay_mult": pay_mult,
+            "bonus_tiempo": bonus_tiempo,
+            "final_score": final_score,
+            "tiempo_restante": tiempo_restante,
+            "reputacion": self.character.reputation,
+            "ingresos_base": self.character.score
+        }
 
     def run(self):
         """
@@ -520,11 +612,10 @@ class CourierQuestGame:
             if not self.paused:
                 self.update_game_state()
                 self.draw()
-                self.check_win_loss()
             pygame.display.flip()
             clock.tick(constants.FPS)
         # Cerrar Pygame y el proceso completamente al salir del bucle principal
+        pygame.mixer.music.stop()
         pygame.quit()
-        sys.exit()
 
-# Fin de game.py
+        sys.exit()

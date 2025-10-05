@@ -11,9 +11,15 @@ class Inventory:
         self.jobs = []  # lista de Job aceptados (todos)
         self.picked_jobs = []  # lista de Job recogidos (solo los que están físicamente con el personaje)
 
+    def is_neighbor(self, pos1, pos2):
+        """Check if pos1 is the same or adjacent (including diagonals) to pos2."""
+        dx = abs(pos1[0] - pos2[0])
+        dy = abs(pos1[1] - pos2[1])
+        return (dx <= 1 and dy <= 1)
+
     def pickup_job(self, job, character_pos, mapa=None):
-        # Si el jugador está en el pickup (mismo tile), recoge el trabajo
-        if character_pos == job.pickup:
+        # Permitir recoger si el jugador está en el pickup o en un tile vecino
+        if self.is_neighbor(character_pos, job.pickup):
             job.recogido = True
             # Mover el trabajo a la lista de recogidos si no está ya ahí
             if job not in self.picked_jobs:
@@ -22,8 +28,8 @@ class Inventory:
         return False
 
     def deliver_job(self, job, character_pos, mapa=None):
-        # Si el jugador está en el dropoff (mismo tile), entrega el trabajo
-        if character_pos == job.dropoff and job.recogido:
+        # Si el jugador está en el dropoff (mismo tile o vecino), entrega el trabajo
+        if self.is_neighbor(character_pos, job.dropoff) and job.recogido:
             self.remove_job(job.id)
             return True
         return False
@@ -34,7 +40,6 @@ class Inventory:
 
     def accept_job(self, job):
         """Acepta un job si no excede el peso máximo."""
-        # Usar get_total_jobs_weight() para considerar todos los trabajos (recogidos y no recogidos)
         if self.get_total_jobs_weight() + job.weight <= self.max_weight:
             self.jobs.append(job)
             return True
@@ -46,9 +51,7 @@ class Inventory:
 
     def remove_job(self, job_id):
         """Elimina un job por id de ambas listas."""
-        # Eliminar de la lista principal
         self.jobs = [job for job in self.jobs if job.id != job_id]
-        # Eliminar de la lista de recogidos
         self.picked_jobs = [job for job in self.picked_jobs if job.id != job_id]
 
     def traverse(self, reverse=False):
@@ -62,7 +65,6 @@ class Inventory:
         heap = []
         for idx, job in enumerate(self.jobs):
             tiebreaker = getattr(job, 'id', idx)
-            # Usamos prioridad negativa para que mayor prioridad salga primero
             heap.append((-job.priority, tiebreaker, job))
         heapq.heapify(heap)
         sorted_jobs = []
@@ -103,3 +105,19 @@ class Inventory:
     def get_picked_jobs(self):
         """Devuelve la lista de trabajos recogidos."""
         return self.picked_jobs
+
+    def cancel_job(self, job_id):
+        """Cancela un job aceptado y lo elimina del inventario."""
+        # Encontrar el job a cancelar
+        for job in self.jobs:
+            if job.id == job_id:
+                self.remove_job(job_id)
+                return True
+        return False
+
+    def get_job_by_id(self, job_id):
+        """Devuelve un trabajo por su ID si existe en el inventario."""
+        for job in self.jobs:
+            if job.id == job_id:
+                return job
+        return None

@@ -1,5 +1,6 @@
 import pygame
 import constants
+from scoreboard import Scoreboard
 
 class UI:
     def __init__(self, screen):
@@ -50,20 +51,109 @@ class UI:
         pygame.display.flip()
         pygame.time.wait(2500)
 
-    def show_victory(self, reason="¡Has llegado al objetivo!"):
-        """Muestra la pantalla de Victoria con el motivo."""
+    def show_victory(self, final_score, reason="¡Has llegado al objetivo!"):
+        """
+        Muestra la pantalla de Victoria, guarda el puntaje y muestra el scoreboard resaltando el nuevo entry si corresponde.
+        """
         self.screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 60)
         text = font.render("VICTORIA", True, (0, 255, 0))
         reason_font = pygame.font.SysFont(None, 30)
         reason_text = reason_font.render(reason, True, (255, 255, 255))
-        text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 - 40))
-        reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 + 40))
+        text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, 80))
+        reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, 140))
         self.screen.blit(text, text_rect)
         self.screen.blit(reason_text, reason_rect)
+
+        # Guardar puntaje y mostrar scoreboard
+
+        scoreboard = Scoreboard("data/json_files/scores.json")
+        highlight_idx = scoreboard.add_score(int(final_score))
+        scores = scoreboard.get_scores()
+
+        # Mostrar tabla de puntajes
+        table_font = pygame.font.SysFont(None, 32)
+        y_start = 200
+        line_height = 40
+        self.screen.blit(table_font.render("Top 5 Puntajes", True, (255,255,255)), (constants.WIDTH_SCREEN//2 - 100, y_start))
+        y = y_start + 40
+        for idx, entry in enumerate(scores):
+            color = (255, 255, 0) if idx == highlight_idx else (255, 255, 255)
+            entry_text = table_font.render(f"{idx+1}. {entry['score']}", True, color)
+            self.screen.blit(entry_text, (constants.WIDTH_SCREEN//2 - 100, y))
+            y += line_height
+
         pygame.display.flip()
-        pygame.time.wait(2500)
-        
+        pygame.time.wait(3500)
+
+    def show_victory_with_final_score(self, score_data):
+        # Guardar puntaje final en scores.json
+        nombre = input("Ingresa tu nombre para guardar el puntaje: ")
+        scoreboard = Scoreboard("data/json_files/scores.json")
+        scoreboard.add_score(nombre, int(score_data['final_score']))
+        """
+        Muestra la pantalla de victoria con detalles del puntaje final y espera hasta que el jugador presione una tecla.
+        """
+        # Limpiar pantalla
+        self.screen.fill((0, 0, 0))
+
+        # Fuentes
+        title_font = pygame.font.SysFont(None, 60)
+        detail_font = pygame.font.SysFont(None, 30)
+        small_font = pygame.font.SysFont(None, 24)
+
+        # Título principal
+        title = title_font.render("¡VICTORIA!", True, (0, 255, 0))
+        title_rect = title.get_rect(center=(constants.WIDTH_SCREEN // 2, 80))
+        self.screen.blit(title, title_rect)
+
+        # Detalles del puntaje
+        y_pos = 150
+        line_spacing = 35
+
+        details = [
+            f"Ingresos Base: ${score_data['ingresos_base']}",
+            f"Multiplicador Reputación: x{score_data['pay_mult']:.2f}",
+            f"Score Base: ${score_data['score_base']}",
+            f"Bonus por Tiempo: +${score_data['bonus_tiempo']}",
+            "",  # Línea vacía
+            f"PUNTAJE FINAL: ${score_data['final_score']}",
+            "",
+            f"Reputación Final: {score_data['reputacion']}/100",
+            f"Tiempo Restante: {int(score_data['tiempo_restante'])}s"
+        ]
+
+        for detail in details:
+            if detail == "":
+                y_pos += line_spacing // 2
+                continue
+
+            if "PUNTAJE FINAL" in detail:
+                color = (255, 255, 0)  # Amarillo para el puntaje final
+                font = detail_font
+            else:
+                color = (255, 255, 255)  # Blanco para los demás
+                font = small_font
+
+            text = font.render(detail, True, color)
+            text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, y_pos))
+            self.screen.blit(text, text_rect)
+            y_pos += line_spacing
+
+        # Instrucciones
+        instruction = small_font.render("Presiona cualquier tecla para salir", True, (200, 200, 200))
+        instruction_rect = instruction.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN - 50))
+        self.screen.blit(instruction, instruction_rect)
+
+        pygame.display.flip()
+
+        # Esperar hasta que el jugador presione una tecla
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN:
+                    waiting = False
+
     def draw_weather(self, weather):
         """Muestra el estado actual del clima en la barra superior."""
         if not weather:
@@ -96,10 +186,10 @@ class UI:
             hud_y = constants.HEIGHT_SCREEN - hud_height
         # Draw HUD background image for navbar
         self.screen.blit(self.hud_img_nav, (0, hud_y))
-        peso_actual = character.peso_total
+        peso_actual = character.total_weight
         peso_text = self.font.render(f"Peso actual: {peso_actual}", True, (255, 255, 255))
         self.screen.blit(peso_text, (180, constants.HEIGHT_SCREEN - hud_height + 15))
-        rep = reputacion if reputacion is not None else character.reputacion
+        rep = reputacion if reputacion is not None else character.reputation
         if rep >= 70:
             rep_color = (0, 200, 255)
         elif rep >= 30:
@@ -141,7 +231,7 @@ class UI:
         x, y = 40, hud_y + 5
         self.screen.blit(stamina_img, (x, y))
 
-    def draw_inventory(self, inventory, order=None, tiempo_limite=None):
+    def draw_inventory(self, inventory, order=None, tiempo_limite=None, selected_job_index=0):
         # Dimensiones de la ventana pop-up
         popup_width = 600
         popup_height = 400
@@ -165,12 +255,19 @@ class UI:
             jobs = inventory.jobs
             order_text = self.font_inventory.render("Orden: Default", True, (180,180,180))
         self.screen.blit(order_text, (popup_x + 30, popup_y + 60))
+
         # Listado de trabajos
         y = popup_y + 100
         max_width = popup_width - 45
         # Fuente un poco más grande para los trabajos
         small_job_font = pygame.font.SysFont(None, 22)
-        for job in jobs:
+
+        for i, job in enumerate(jobs):
+            # Highlight selected job
+            if i == selected_job_index:
+                highlight_rect = pygame.Rect(popup_x + 25, y - 2, popup_width - 50, 26)
+                pygame.draw.rect(self.screen, (50, 50, 100), highlight_rect)
+
             # Calcular deadline mostrado como (tiempo_limite - deadline_job)
             deadline_display = str(job.deadline)
             if tiempo_limite is not None:
@@ -186,12 +283,17 @@ class UI:
                 except Exception:
                     # Si falla el parseo, dejar el valor original
                     deadline_display = str(job.deadline)
+
+            # Mostrar todos los datos del trabajo junto al deadline calculado
             text_raw = f"ID: {job.id} | Pago: ${job.payout} | Peso: {job.weight} | Prioridad: {job.priority} | Deadline: {deadline_display}"
-            job_text = small_job_font.render(text_raw, True, (255,255,255))
+            job_color = (255, 255, 0) if i == selected_job_index else (255, 255, 255)
+            job_text = small_job_font.render(text_raw, True, job_color)
             self.screen.blit(job_text, (popup_x + 30, y))
             y += 28  # Ajusta la separación para la nueva fuente
-        info_text = self.font_inventory.render("Presiona D para deadline, P para prioridad, I para cerrar", True, (255,200,100))
-        self.screen.blit(info_text, (popup_x + 30, y+20))
+
+        # Controles de navegación e información
+        info_text = self.font_inventory.render("↑↓: Navegar | D: Deadline | P: Prioridad | C: Cancelar trabajo | I: Cerrar", True, (255,200,100))
+        self.screen.blit(info_text, (popup_x + 20, y+20))
 
     def draw_job_decision(self, pending_job, job_decision_message=None):
         rect_width = 480
@@ -217,7 +319,7 @@ class UI:
 
     def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None):
         # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
-        for job in character.inventario.jobs:
+        for job in character.inventory.jobs:
             # Solo mostrar pickup si no ha sido recogido
             if not job.is_recogido():
                 px, py = job.pickup

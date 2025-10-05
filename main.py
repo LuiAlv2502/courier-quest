@@ -2,8 +2,8 @@ import os
 import sys
 import pygame
 import constants
-import CourierQuestGame
 from main_menu import MainMenu
+from CourierQuestGame import CourierQuestGame
 
 def main():
     # Cambiar al directorio donde está el script
@@ -11,8 +11,6 @@ def main():
     os.chdir(script_dir)
     
     # Inicializar Pygame
-    pygame.init()
-    pygame.font.init()  # Asegura que el módulo de fuentes esté inicializado
     screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
     pygame.display.set_caption("Courier Quest")
     

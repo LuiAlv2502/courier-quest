@@ -35,14 +35,7 @@ class MainMenu:
         # Centrar el menú en la pantalla
         menu_x = (constants.WIDTH_SCREEN - self.menu_width) // 2
         menu_y = (constants.HEIGHT_SCREEN - self.menu_height) // 2
-        
-        # Dibujar fondo del menú (imagen original sin escalar)
-        if self.hud_img:
-            self.screen.blit(self.hud_img, (menu_x, menu_y))
-        else:
-            pygame.draw.rect(self.screen, (50, 50, 50), (menu_x, menu_y, self.menu_width, self.menu_height))
-            pygame.draw.rect(self.screen, (255, 255, 255), (menu_x, menu_y, self.menu_width, self.menu_height), 2)
-        
+
         # Título del juego
         title_text = self.font_title.render("COURIER QUEST", True, (255, 255, 0))
         title_rect = title_text.get_rect(center=(constants.WIDTH_SCREEN // 2, menu_y + 60))
@@ -69,23 +62,6 @@ class MainMenu:
         exit_text = self.font_menu.render("[S] Salir", True, (255, 255, 255))
         exit_rect = exit_text.get_rect(center=(constants.WIDTH_SCREEN // 2, salir_y))
         self.screen.blit(exit_text, exit_rect)
-        
-        # Información sobre el guardado si existe
-        if self.has_save:
-            save_info = self.save_system.get_save_info(1)
-            if save_info:
-                info_y = menu_y + self.menu_height - 60
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(save_info["timestamp"])
-                    formatted_date = dt.strftime("%d/%m/%Y %H:%M")
-                    info_text = f"Última partida: {formatted_date}"
-                except:
-                    info_text = "Partida guardada disponible"
-                
-                save_text = self.font_info.render(info_text, True, (200, 200, 200))
-                save_rect = save_text.get_rect(center=(constants.WIDTH_SCREEN // 2, info_y))
-                self.screen.blit(save_text, save_rect)
         
         pygame.display.flip()
     
