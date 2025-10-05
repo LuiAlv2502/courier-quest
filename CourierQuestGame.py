@@ -537,17 +537,6 @@ class CourierQuestGame:
             if self.show_job_decision:
                 self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
 
-    def check_win_loss(self):
-        """
-        Verifica condiciones de victoria (score objetivo) o derrota (reputación o tiempo agotado).
-        """
-        if self.character.score >= self.objetivo_valor:
-            print("You win!")
-            self.running = False
-        elif self.character.reputation < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
-            print("You lose.")
-            self.running = False
-
     # Métodos getter para exponer información relevante del estado del juego
     def get_tiempo_juego_acumulado(self):
         return self.tiempo_juego_acumulado
@@ -623,7 +612,6 @@ class CourierQuestGame:
             if not self.paused:
                 self.update_game_state()
                 self.draw()
-                self.check_win_loss()
             pygame.display.flip()
             clock.tick(constants.FPS)
         # Cerrar Pygame y el proceso completamente al salir del bucle principal
