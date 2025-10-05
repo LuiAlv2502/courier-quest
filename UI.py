@@ -159,20 +159,20 @@ class UI:
         if not weather:
             return
         clima_text = self.font.render(
-            f"Clima: {weather.current_condition}", True, (135, 206, 250)
+            f"Clima: {weather.current_condition}", True, (107, 40, 20)
         )
-        self.screen.blit(clima_text, (20, 10))
+        self.screen.blit(clima_text, (475, 17))
 
     def draw_topbar(self, character, money_objective=None, weather= None):
         top_bar_height = constants.TOP_BAR_HEIGHT
-        # Draw HUD background image for topbar
+        #Dibuja la imagen del fondo del HUD para el topbar
         self.screen.blit(self.hud_img_top, (0, 0))
         dinero_ganado = character.get_score()
         if money_objective is not None:
             score_text = self.font_top.render(f"Puntuación: ${dinero_ganado} / ${money_objective}", True, (255, 255, 255))
         else:
             score_text = self.font_top.render(f"Puntuación: ${dinero_ganado}", True, (255, 255, 255))
-        text_rect = score_text.get_rect(topleft=(constants.WIDTH_SCREEN // 2 + 30, top_bar_height // 2 - 10))
+        text_rect = score_text.get_rect(topleft=(constants.WIDTH_SCREEN // 30 + 2, top_bar_height // 2 - 10))
         self.screen.blit(score_text, text_rect)
 
         if weather:
@@ -300,12 +300,12 @@ class UI:
         rect_height = 110
         rect_x = (constants.WIDTH_SCREEN - rect_width) // 2
         rect_y = (constants.HEIGHT_SCREEN - rect_height) // 2 - 25
-        # Draw HUD sprite as background for decision window
+        #Dibuja el sprite del HUD como fondo de la ventana de decisión
         hud_decision_img = pygame.transform.scale(self.hud_img, (rect_width, rect_height))
         self.screen.blit(hud_decision_img, (rect_x, rect_y))
         if not pending_job:
             return
-        font = pygame.font.SysFont(None, 28)
+        font = pygame.font.SysFont(None, 22)
         job_text = font.render(f"Pedido: {pending_job.id} | Pago: ${pending_job.payout} | Peso: {pending_job.weight} | Prioridad: {pending_job.priority}", True, (255,255,255))
         rect = job_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2 - 40))
         self.screen.blit(job_text, rect)
@@ -335,3 +335,7 @@ class UI:
         self.draw_topbar(character, money_objective, weather)
         self.draw_downbar(character, tiempo_restante, reputacion)
         self.draw_resistencia(character)
+
+    print("hola diegoooooooooo")
+
+        #djfijejffjfoddofjfkj
