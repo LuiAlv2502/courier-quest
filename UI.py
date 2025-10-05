@@ -1,5 +1,6 @@
 import pygame
 import constants
+from scoreboard import Scoreboard
 
 class UI:
     def __init__(self, screen):
@@ -50,21 +51,46 @@ class UI:
         pygame.display.flip()
         pygame.time.wait(2500)
 
-    def show_victory(self, reason="¡Has llegado al objetivo!"):
-        """Muestra la pantalla de Victoria con el motivo."""
+    def show_victory(self, final_score, reason="¡Has llegado al objetivo!"):
+        """
+        Muestra la pantalla de Victoria, guarda el puntaje y muestra el scoreboard resaltando el nuevo entry si corresponde.
+        """
         self.screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 60)
         text = font.render("VICTORIA", True, (0, 255, 0))
         reason_font = pygame.font.SysFont(None, 30)
         reason_text = reason_font.render(reason, True, (255, 255, 255))
-        text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 - 40))
-        reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN // 2 + 40))
+        text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, 80))
+        reason_rect = reason_text.get_rect(center=(constants.WIDTH_SCREEN // 2, 140))
         self.screen.blit(text, text_rect)
         self.screen.blit(reason_text, reason_rect)
+
+        # Guardar puntaje y mostrar scoreboard
+
+        scoreboard = Scoreboard("data/json_files/scores.json")
+        highlight_idx = scoreboard.add_score(int(final_score))
+        scores = scoreboard.get_scores()
+
+        # Mostrar tabla de puntajes
+        table_font = pygame.font.SysFont(None, 32)
+        y_start = 200
+        line_height = 40
+        self.screen.blit(table_font.render("Top 5 Puntajes", True, (255,255,255)), (constants.WIDTH_SCREEN//2 - 100, y_start))
+        y = y_start + 40
+        for idx, entry in enumerate(scores):
+            color = (255, 255, 0) if idx == highlight_idx else (255, 255, 255)
+            entry_text = table_font.render(f"{idx+1}. {entry['score']}", True, color)
+            self.screen.blit(entry_text, (constants.WIDTH_SCREEN//2 - 100, y))
+            y += line_height
+
         pygame.display.flip()
-        pygame.time.wait(2500)
+        pygame.time.wait(3500)
 
     def show_victory_with_final_score(self, score_data):
+        # Guardar puntaje final en scores.json
+        nombre = input("Ingresa tu nombre para guardar el puntaje: ")
+        scoreboard = Scoreboard("data/json_files/scores.json")
+        scoreboard.add_score(nombre, int(score_data['final_score']))
         """
         Muestra la pantalla de victoria con detalles del puntaje final y espera hasta que el jugador presione una tecla.
         """
