@@ -335,7 +335,3 @@ class UI:
         self.draw_topbar(character, money_objective, weather)
         self.draw_downbar(character, tiempo_restante, reputacion)
         self.draw_resistencia(character)
-
-    print("hola diegoooooooooo")
-
-        #djfijejffjfoddofjfkj
