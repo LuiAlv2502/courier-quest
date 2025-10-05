@@ -98,5 +98,6 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
 - **Funcionalidades:** Menú de pausa, sistema de guardado binario, navegación de inventario, gestión temporal
 
 ---
-
-**Nota:** Para detalles adicionales, consulta los comentarios en el código fuente de cada módulo.
+## Aclaración las deadlines dentro del inventar
+no se pudo hacer correctamente la representación de los deadlines del juego por un cambio en el json de la api a ultimo momento.
+Por lo tanto los deadlines se representan de una manera a la cual no teníamos pensado.

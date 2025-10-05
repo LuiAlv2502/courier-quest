@@ -163,7 +163,7 @@ class UI:
         peso_actual = character.peso_total
         peso_text = self.font.render(f"Peso actual: {peso_actual}", True, (255, 255, 255))
         self.screen.blit(peso_text, (180, constants.HEIGHT_SCREEN - hud_height + 15))
-        rep = reputacion if reputacion is not None else character.reputacion
+        rep = reputacion if reputacion is not None else character.reputation
         if rep >= 70:
             rep_color = (0, 200, 255)
         elif rep >= 30:
@@ -258,6 +258,7 @@ class UI:
                     # Si falla el parseo, dejar el valor original
                     deadline_display = str(job.deadline)
 
+            # Mostrar todos los datos del trabajo junto al deadline calculado
             text_raw = f"ID: {job.id} | Pago: ${job.payout} | Peso: {job.weight} | Prioridad: {job.priority} | Deadline: {deadline_display}"
             job_color = (255, 255, 0) if i == selected_job_index else (255, 255, 255)
             job_text = small_job_font.render(text_raw, True, job_color)

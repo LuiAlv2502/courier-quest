@@ -6,8 +6,8 @@ class JobManager:
         # Formato: (release_time, job_id, job)
         self.job_priority_queue = []
         for job in jobs:
-            heapq.heappush(self.job_priority_queue, (job.get_release_time(), job.id, job))
-        self.visible_jobs = []  # trabajos que se pueden mostrar/aceptar
+            self.add_job_to_queue(job)
+        self.visible_jobs = []
 
     def add_job_to_queue(self, job):
         # Insertar en la cola de prioridad

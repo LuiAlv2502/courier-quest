@@ -16,7 +16,7 @@ class Character:
         self.screen = screen  # Superficie de dibujo
         self.tile_x = tile_x  # Posición X en tiles
         self.tile_y = tile_y  # Posición Y en tiles
-        self.reputacion = 70  # Reputación inicial (punto 7)
+        self.reputation = 70  # Reputación inicial (punto 7)
         self.tile_size = tile_size  # Tamaño de cada tile
         self.resistencia = 100  # Resistencia inicial
         self.peso_total = 0  # Peso total de trabajos recogidos
@@ -42,59 +42,59 @@ class Character:
     # --- Lógica de reputación y penalizaciones ---
     def reputacion_multiplicador_pago(self):
         """Multiplicador de pago por reputación alta (≥90)"""
-        return 1.05 if self.reputacion >= 90 else 1.0
+        return 1.05 if self.reputation >= 90 else 1.0
 
     def reputacion_derrota(self):
         """Devuelve True si la reputación está en derrota (<20)"""
-        return self.reputacion < 20
+        return self.reputation < 20
 
     def reputacion_entrega_a_tiempo(self):
-        self.reputacion = min(100, self.reputacion + 3)
+        self.reputation = min(100, self.reputation + 3)
         self.entregas_sin_penalizacion += 1
-        self._check_racha_bonus()
+        self._check_bonus_streak()
 
     def reputacion_entrega_temprana(self):
-        self.reputacion = min(100, self.reputacion + 5)
+        self.reputation = min(100, self.reputation + 5)
         self.entregas_sin_penalizacion += 1
-        self._check_racha_bonus()
+        self._check_bonus_streak()
 
     def reputacion_entrega_tarde(self, segundos_tarde):
         # Primera tardanza del día a mitad de penalización si reputación ≥85
-        if not self.primera_tardanza_aplicada and self.reputacion >= 85:
+        if not self.primera_tardanza_aplicada and self.reputation >= 85:
             self.primera_tardanza_aplicada = True
             if segundos_tarde <= 30:
-                self.reputacion = max(0, self.reputacion - 1)
+                self.reputation = max(0, self.reputation - 1)
             elif segundos_tarde <= 120:
-                self.reputacion = max(0, self.reputacion - 2.5)
+                self.reputation = max(0, self.reputation - 2.5)
             else:
-                self.reputacion = max(0, self.reputacion - 5)
+                self.reputation = max(0, self.reputation - 5)
         else:
             if segundos_tarde <= 30:
-                self.reputacion = max(0, self.reputacion - 2)
+                self.reputation = max(0, self.reputation - 2)
             elif segundos_tarde <= 120:
-                self.reputacion = max(0, self.reputacion - 5)
+                self.reputation = max(0, self.reputation - 5)
             else:
-                self.reputacion = max(0, self.reputacion - 10)
+                self.reputation = max(0, self.reputation - 10)
         self.entregas_sin_penalizacion = 0
         self.racha_bonus_aplicado = False
 
-    def reputacion_cancelar_pedido(self):
-        self.reputacion = max(0, self.reputacion - 4)
+    def cancel_job_reputation(self):
+        self.reputation = max(0, self.reputation - 4)
         self.entregas_sin_penalizacion = 0
         self.racha_bonus_aplicado = False
 
-    def reputacion_expirar_paquete(self):
-        self.reputacion = max(0, self.reputacion - 6)
+    def reputation_expirar_job(self):
+        self.reputation = max(0, self.reputation - 6)
         self.entregas_sin_penalizacion = 0
         self.racha_bonus_aplicado = False
 
-    def _check_racha_bonus(self):
+    def _check_bonus_streak(self):
         # Racha de 3 entregas sin penalización: +2 (una vez por racha)
         if self.entregas_sin_penalizacion >= 3 and not self.racha_bonus_aplicado:
-            self.reputacion = min(100, self.reputacion + 2)
+            self.reputation = min(100, self.reputation + 2)
             self.racha_bonus_aplicado = True
 
-    def reset_racha(self):
+    def reset_streak(self):
         self.entregas_sin_penalizacion = 0
         self.racha_bonus_aplicado = False
         self.primera_tardanza_aplicada = False
@@ -113,7 +113,7 @@ class Character:
     
     def get_reputacion(self):
         """Devuelve la reputación actual."""
-        return self.reputacion
+        return self.reputation
     
     def get_resistencia(self):
         """Devuelve la resistencia actual."""
@@ -245,7 +245,7 @@ class Character:
             v0 = 3  # tiles por segundo
             Mresistencia = 1.0 if self.resistencia > 30 else 0.8  # Penalización por baja resistencia
             Mpeso = max(0.8, 1 - 0.03 *  self.peso_total)  # Penalización por peso
-            Mrep = 1.03 if self.reputacion >= 90 else 1.0  # Bonus por reputación alta
+            Mrep = 1.03 if self.reputation >= 90 else 1.0  # Bonus por reputación alta
             Msurface = mapa.get_surface_weight(nueva_x, nueva_y)  # Multiplicador por superficie
 
             Mclima = 1.0  # Multiplicador por clima (placeholder)
@@ -275,7 +275,7 @@ class Character:
         return {
             "tile_x": self.tile_x,
             "tile_y": self.tile_y,
-            "reputacion": self.reputacion,
+            "reputacion": self.reputation,
             "tile_size": self.tile_size,
             "resistencia": self.resistencia,
             "peso_total": self.peso_total,

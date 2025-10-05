@@ -11,8 +11,6 @@ def main():
     os.chdir(script_dir)
     
     # Inicializar Pygame
-    pygame.init()
-    pygame.font.init()  # Asegura que el módulo de fuentes esté inicializado
     screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
     pygame.display.set_caption("Courier Quest")
     

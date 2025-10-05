@@ -132,7 +132,7 @@ class CourierQuestGame:
         self._restore_character_data(components["character"])
         self._restore_inventory_data(components.get("inventory", {}))
         self._restore_job_manager_data(components.get("jobs", {}))
-        self._filter_accepted_jobs()
+        # self._filter_accepted_jobs()
 
         # Resetear cualquier trabajo pendiente mostrado por error
         self.pending_job = None
@@ -165,7 +165,7 @@ class CourierQuestGame:
         """Restaura los datos del personaje (posición, estadísticas, etc.)"""
         self.character.tile_x = character_data.get("tile_x", 0)
         self.character.tile_y = character_data.get("tile_y", 0)
-        self.character.reputacion = character_data.get("reputacion", 70)
+        self.character.reputation = character_data.get("reputacion", 70)
         self.character.resistencia = character_data.get("resistencia", 100)
         self.character.peso_total = character_data.get("peso_total", 0)
         self.character.score = character_data.get("score", 0)
@@ -255,31 +255,29 @@ class CourierQuestGame:
         else:
             return int(job_data.get("release_time", 0))
 
-    def _filter_accepted_jobs(self):
-        """Filtra trabajos ya aceptados de la cola de prioridad y trabajos visibles"""
-        try:
-            accepted_ids = {job.id for job in self.character.inventario.jobs}
-            if hasattr(self, 'job_manager') and self.job_manager:
-                self._filter_priority_queue(accepted_ids)
-                self._filter_visible_jobs(accepted_ids)
-        except Exception as e:
-            print(f"[WARN] No se pudo filtrar trabajos aceptados al restaurar: {e}")
+    # def _filter_accepted_jobs(self):
+    #     """Filtra trabajos ya aceptados de la cola de prioridad y trabajos visibles"""
+    #     try:
+    #         accepted_ids = {job.id for job in self.character.inventario.jobs}
+    #         if hasattr(self, 'job_manager') and self.job_manager:
+    #             self._filter_priority_queue(accepted_ids)
+    #             self._filter_visible_jobs(accepted_ids)
+    #     except Exception as e:
+    #         print(f"[WARN] No se pudo filtrar trabajos aceptados al restaurar: {e}")
 
-    def _filter_priority_queue(self, accepted_ids):
-        """Filtra trabajos aceptados de la cola de prioridad"""
-        new_queue = []
-        for release_time, jid, job in self.job_manager.job_priority_queue:
-            if jid not in accepted_ids:
-                new_queue.append((release_time, jid, job))
-        self.job_manager.job_priority_queue = new_queue
-        heapq.heapify(self.job_manager.job_priority_queue)
+    # def _filter_priority_queue(self, accepted_ids):
+    #     """Filtra trabajos aceptados de la cola de prioridad"""
+    #     new_queue = []
+    #     for release_time, jid, job in self.job_manager.job_priority_queue:
+    #         if jid not in accepted_ids:
+    #             new_queue.append((release_time, jid, job))
+    #     self.job_manager.job_priority_queue = new_queue
+    #     heapq.heapify(self.job_manager.job_priority_queue)
 
-    def _filter_visible_jobs(self, accepted_ids):
-        """Filtra trabajos aceptados de la lista de trabajos visibles"""
-        self.job_manager.visible_jobs = [j for j in self.job_manager.visible_jobs if j.id not in accepted_ids]
+    # def _filter_visible_jobs(self, accepted_ids):
+    #     """Filtra trabajos aceptados de la lista de trabajos visibles"""
+    #     self.job_manager.visible_jobs = [j for j in self.job_manager.visible_jobs if j.id not in accepted_ids]
 
-        # Resetear cualquier trabajo pendiente mostrado por error
-        self.pending_job = None
 
 
 
@@ -290,12 +288,7 @@ class CourierQuestGame:
         """
         self.mapa = Map("json_files/city_map.json", tile_size=20, top_bar_height=constants.TOP_BAR_HEIGHT)
         # Elegir cargador de trabajos
-        try:
-            jobs_list = load_jobs("json_files/city_jobs.json")
-        except Exception as e:
-            # Fallback seguro: si falla el cargador con accesibilidad, usar el plano
-            print(f"[WARN] Falla cargando trabajos con accesibilidad ({e}). Usando cargador plano.")
-            jobs_list = load_jobs("json_files/city_jobs.json")
+        jobs_list = load_jobs("json_files/city_jobs.json")
         self.job_manager = JobManager(jobs_list)
         if not minimal:
             self.character = Character(0,0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
@@ -379,13 +372,12 @@ class CourierQuestGame:
                             selected_job = current_jobs[self.selected_job_index]
                             if self.character.inventario.cancel_job(selected_job.id):
                                 # Apply reputation penalty for canceling
-                                self.character.reputacion_cancelar_pedido()
+                                self.character.reputation_expirar_job()
                                 # Update character stats after cancellation
                                 self.character.update_stats()
                                 # Adjust selected index if needed
                                 if self.selected_job_index >= len(current_jobs) - 1:
                                     self.selected_job_index = max(0, len(current_jobs) - 2)
-                                print(f"Trabajo {selected_job.id} cancelado. Reputación: {self.character.reputacion}")
                 elif self.show_job_decision and not self.show_inventory:
                     if event.key == pygame.K_a:
                         if self.pending_job and self.character.inventario.accept_job(self.pending_job):
@@ -398,7 +390,6 @@ class CourierQuestGame:
                     elif event.key == pygame.K_n:
                         if self.pending_job:
                             self.job_manager.remove_job(self.pending_job.id)
-                        self.character.reputacion_cancelar_pedido()
                         self.show_job_decision = False
                         self.pending_job = None
                         self.job_decision_message = ""
@@ -406,7 +397,6 @@ class CourierQuestGame:
                     if not self.character.resistencia_exhausto:
                         if event.key == pygame.K_LEFT:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
-                            # --- PASAR weather a movement ---
                             self.character.movement(-1, 0, self.mapa, weather=self.weather)
                         elif event.key == pygame.K_RIGHT:
                             self.move_stack.push((self.character.tile_x, self.character.tile_y))
@@ -431,7 +421,7 @@ class CourierQuestGame:
                             recogido = self.character.inventario.pickup_job(job, (self.character.tile_x, self.character.tile_y))
                             if recogido:
                                 self.character.update_stats()
-                    # Solo intentar entregar trabajos que YA estaban recogidos antes de este frame
+                    # Solo intentar entregar trabajos que ya estaban recogidos
                     for job in [j for j in self.character.inventario.jobs if j.is_recogido()]:
                         self._process_dropoff_with_reputacion(job)
                         self.character.update_stats()
@@ -514,8 +504,6 @@ class CourierQuestGame:
         """
         Recupera la resistencia del personaje si está inactivo y no exhausto.
         """
-        # Simplemente llamar al método de recuperación del personaje
-        # El personaje ya maneja la lógica de cuándo recuperar resistencia
         self.character.recuperar_resistencia()
 
     def _remove_expired_jobs(self, elapsed_seconds):
@@ -525,7 +513,7 @@ class CourierQuestGame:
         expired_jobs = [job for job in self.character.inventario.jobs if job.is_expired(elapsed_seconds)]
         for job in expired_jobs:
             self.character.inventario.remove_job(job)
-            self.character.reputacion_expirar_paquete()
+            self.character.reputation_expirar_job()
             self.last_deadline_penalty = True
 
     def update_game_state(self):
@@ -547,16 +535,16 @@ class CourierQuestGame:
         """
         Dibuja todos los elementos del juego en pantalla: mapa, personaje, HUD, inventario, etc.
         """
-        reputacion = self.character.reputacion
+        reputacion = self.character.reputation
         # Verifica condiciones de victoria (score objetivo) o derrota (reputación o tiempo agotado)
         if self.character.score >= self.objetivo_valor:
             # Calcular puntaje final y mostrar victoria con detalles
             score_data = self.calculate_final_score()
             self.running = False
             self.hud.show_victory_with_final_score(score_data)
-        elif self.character.reputacion < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
+        elif self.character.reputation < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
             self.running = False
-            self.hud.show_game_over(reason="Reputación baja" if self.character.reputacion < 20 else "Tiempo agotado")
+            self.hud.show_game_over(reason="Reputación baja" if self.character.reputation < 20 else "Tiempo agotado")
         else:
             self.mapa.draw_map(self.screen)
             self.character.draw(self.screen)
@@ -579,7 +567,7 @@ class CourierQuestGame:
         if self.character.score >= self.objetivo_valor:
             print("¡Has ganado!")
             self.running = False
-        elif self.character.reputacion < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
+        elif self.character.reputation < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
             print("Has perdido.")
             self.running = False
 
@@ -644,7 +632,7 @@ class CourierQuestGame:
             "bonus_tiempo": bonus_tiempo,
             "final_score": final_score,
             "tiempo_restante": tiempo_restante,
-            "reputacion": self.character.reputacion,
+            "reputacion": self.character.reputation,
             "ingresos_base": self.character.score
         }
 
