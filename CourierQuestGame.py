@@ -62,7 +62,7 @@ class CourierQuestGame:
         pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        #api.api_request()
+        api.api_request()
     
     def pause_menu(self):
         """
