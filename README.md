@@ -99,5 +99,5 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
 
 ---
 ## Aclaración las deadlines dentro del inventar
-no se pudo hacer correctamente la representación de los deadlines del juego por un cambio en el json de la api a ultimo momento.
+-no se pudo hacer correctamente la representación de los deadlines del juego por un cambio en el json de la api a ultimo momento.
 Por lo tanto los deadlines se representan de una manera a la cual no teníamos pensado.

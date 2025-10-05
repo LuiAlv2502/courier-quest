@@ -22,7 +22,6 @@ def get_latest_cache_file(cache_dir, name):
 
 def save_api_data(data, name, cache_dir="api_cache"):
     """Guarda los datos tanto en json_files como en el caché con timestamp."""
-    # Crear directorios si no existen
     os.makedirs("json_files", exist_ok=True)
     os.makedirs(cache_dir, exist_ok=True)
 
@@ -48,7 +47,6 @@ def load_from_cache(name, cache_dir="api_cache"):
         with open(latest_cache, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Copiar a json_files para mantener consistencia
         os.makedirs("json_files", exist_ok=True)
         with open(f"json_files/{name}.json", "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)

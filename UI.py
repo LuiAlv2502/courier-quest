@@ -160,7 +160,7 @@ class UI:
             hud_y = constants.HEIGHT_SCREEN - hud_height
         # Draw HUD background image for navbar
         self.screen.blit(self.hud_img_nav, (0, hud_y))
-        peso_actual = character.peso_total
+        peso_actual = character.total_weight
         peso_text = self.font.render(f"Peso actual: {peso_actual}", True, (255, 255, 255))
         self.screen.blit(peso_text, (180, constants.HEIGHT_SCREEN - hud_height + 15))
         rep = reputacion if reputacion is not None else character.reputation
@@ -293,7 +293,7 @@ class UI:
 
     def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None):
         # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
-        for job in character.inventario.jobs:
+        for job in character.inventory.jobs:
             # Solo mostrar pickup si no ha sido recogido
             if not job.is_recogido():
                 px, py = job.pickup
