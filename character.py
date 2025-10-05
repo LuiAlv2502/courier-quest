@@ -2,6 +2,7 @@ import pygame  # Librería para gráficos y eventos
 import constants  # Constantes globales del juego
 from job import Job  # Clase para trabajos
 from inventory import Inventory  # Clase para el inventario
+import os
 
 
 
@@ -38,6 +39,10 @@ class Character:
         self.deliveres_without_penalization = 0  # Para rachas
         self.streak_bonus_applied = False # Si ya se aplicó el bonus de racha
         self.first_job_late_aplied = False # Si ya se aplicó la primera tardanza del día
+
+        # Dirección actual para dibujar el sprite del personaje
+        self.facing = "down"  # down | up | left | right
+        self.character_sprites = self.load_character_sprites()
 
 
     # --- Lógica de reputación y penalizaciones ---
@@ -108,7 +113,7 @@ class Character:
 
     def reset_streak(self):
         """Resetea la racha de entregas sin penalización (usado al cambiar de día)."""
-        self.deliveres_without_penalization = 0
+        self.deliveres_without_penalizacion = 0
         self.streak_bonus_applied = False
         self.first_job_late_aplied = False
 
@@ -143,8 +148,16 @@ class Character:
         self.score += payout
 
     def draw(self, screen):
-        """Dibuja el personaje en la pantalla."""
-        pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
+        """Dibuja el personaje en la pantalla con sprite direccional si está disponible."""
+        sprite = None
+        if hasattr(self, 'character_sprites') and self.character_sprites:
+            sprite = self.character_sprites.get(self.facing)
+        if sprite:
+            # Asegurar que el sprite tiene el tamaño del rectángulo del personaje
+            screen.blit(sprite, self.shape.topleft)
+        else:
+            # Fallback a un rectángulo si no hay sprite
+            pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
 
     def restore_stamina(self, segundos=1):
         """
@@ -219,6 +232,17 @@ class Character:
             self.tile_y = nueva_y
             self.shape.center = end_pos
 
+            # Actualiza dirección (solo cuando el movimiento fue válido)
+            if dy < 0:
+                self.facing = "up"
+            elif dy > 0:
+                self.facing = "down"
+            elif dx < 0:
+                self.facing = "left"
+            elif dx > 0:
+                self.facing = "right"
+            # si dx=dy=0, mantenemos la dirección actual
+
             # Actualiza resistencia y timestamp de movimiento
             self.update_stamina(mapa, velocidad)
             self.last_movement = pygame.time.get_ticks()
@@ -282,3 +306,27 @@ class Character:
             "racha_bonus_aplicado": self.streak_bonus_applied,
             "primera_tardanza_aplicada": self.first_job_late_aplied
         }
+
+    # --- Carga de sprites del personaje ---
+    def load_character_sprites(self):
+        """Carga sprites direccionales del personaje desde sprites/character/."""
+        base = os.path.join("sprites", "character")
+        mapping = {
+            "up": "up_character.png",
+            "down": "down_character.png",
+            "left": "left_character.png",
+            "right": "right_character.png",
+        }
+        sprites = {}
+        for key, filename in mapping.items():
+            path = os.path.join(base, filename)
+            if os.path.exists(path):
+                try:
+                    img = pygame.image.load(path).convert_alpha()
+                    img = pygame.transform.scale(img, (constants.WIDTH_CHARACTER, constants.HEIGHT_CHARACTER))
+                    sprites[key] = img
+                except Exception as e:
+                    print(f"Error loading character sprite {filename}: {e}")
+            else:
+                print(f"Character sprite not found: {path}")
+        return sprites
