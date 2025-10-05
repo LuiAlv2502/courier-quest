@@ -27,6 +27,7 @@ class CourierQuestGame:
         self.running = True  # Controla el bucle principal
         self.show_inventory = False  # Muestra/oculta inventario
         self.inventory_order = None  # Orden de inventario (por deadline o prioridad)
+        self.selected_job_index = 0  # Índice del trabajo seleccionado en el inventario
         self.pending_job = None  # Trabajo pendiente de aceptar/rechazar
         self.show_job_decision = False  # Muestra menú de decisión de trabajo
         self.job_decision_message = ""  # Mensaje de decisión de trabajo
@@ -347,11 +348,43 @@ class CourierQuestGame:
                 if event.key == pygame.K_i:
                     self.show_inventory = not self.show_inventory
                     self.inventory_order = None
+                    self.selected_job_index = 0  # Reset selection when opening/closing inventory
                 elif self.show_inventory:
+                    # Get current job list based on order
+                    if self.inventory_order == 'deadline':
+                        current_jobs = self.character.inventario.filter_by_deadline()
+                    elif self.inventory_order == 'priority':
+                        current_jobs = self.character.inventario.filter_by_priority()
+                    else:
+                        current_jobs = self.character.inventario.jobs
+
                     if event.key == pygame.K_d:
                         self.inventory_order = 'deadline'
+                        self.selected_job_index = 0  # Reset selection when changing order
                     elif event.key == pygame.K_p:
                         self.inventory_order = 'priority'
+                        self.selected_job_index = 0  # Reset selection when changing order
+                    elif event.key == pygame.K_UP:
+                        # Navigate up in job list
+                        if current_jobs:
+                            self.selected_job_index = (self.selected_job_index - 1) % len(current_jobs)
+                    elif event.key == pygame.K_DOWN:
+                        # Navigate down in job list
+                        if current_jobs:
+                            self.selected_job_index = (self.selected_job_index + 1) % len(current_jobs)
+                    elif event.key == pygame.K_c:
+                        # Cancel selected job
+                        if current_jobs and 0 <= self.selected_job_index < len(current_jobs):
+                            selected_job = current_jobs[self.selected_job_index]
+                            if self.character.inventario.cancel_job(selected_job.id):
+                                # Apply reputation penalty for canceling
+                                self.character.reputacion_cancelar_pedido()
+                                # Update character stats after cancellation
+                                self.character.update_stats()
+                                # Adjust selected index if needed
+                                if self.selected_job_index >= len(current_jobs) - 1:
+                                    self.selected_job_index = max(0, len(current_jobs) - 2)
+                                print(f"Trabajo {selected_job.id} cancelado. Reputación: {self.character.reputacion}")
                 elif self.show_job_decision and not self.show_inventory:
                     if event.key == pygame.K_a:
                         if self.pending_job and self.character.inventario.accept_job(self.pending_job):
@@ -531,7 +564,7 @@ class CourierQuestGame:
         self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
         # Si corresponde, dibuja inventario
         if self.show_inventory:
-            self.hud.draw_inventory(self.character.inventario, order=self.inventory_order, tiempo_limite=self.tiempo_limite)
+            self.hud.draw_inventory(self.character.inventario, order=self.inventory_order, tiempo_limite=self.tiempo_limite, selected_job_index=self.selected_job_index)
         # Si corresponde, dibuja menú de decisión de trabajo
         if self.show_job_decision:
             self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
@@ -592,4 +625,3 @@ class CourierQuestGame:
         # Cerrar Pygame y el proceso completamente al salir del bucle principal
         pygame.quit()
         sys.exit()
-

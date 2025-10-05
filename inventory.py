@@ -109,3 +109,20 @@ class Inventory:
     def get_picked_jobs(self):
         """Devuelve la lista de trabajos recogidos."""
         return self.picked_jobs
+
+    def cancel_job(self, job_id):
+        """Cancela un job aceptado y lo elimina del inventario."""
+        # Encontrar el job a cancelar
+        job_to_cancel = None
+        for job in self.jobs:
+            if job.id == job_id:
+                self.remove_job(job_id)
+                return True
+        return False
+
+    def get_job_by_id(self, job_id):
+        """Devuelve un trabajo por su ID si existe en el inventario."""
+        for job in self.jobs:
+            if job.id == job_id:
+                return job
+        return None
