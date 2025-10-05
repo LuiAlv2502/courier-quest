@@ -50,20 +50,3 @@ class Scoreboard:
 	def get_scores(self):
 		return self.scores
 
-#lista de maximo 5 puntuaciones con ordenamiento de mayor a menos, valores enteros que son los scores
-#crear archivo scores.json
-"""
-9. Condiciones de victoria/derrota y puntaje
-§ Puntaje	final	(sugerido):
-score_base =	suma	de	pagos	*	pay_mult	(por	reputación	alta)
-bonus_tiempo	=	+X	si	terminas	antes	del	20%	del	tiempo	restante
-penalizaciones	=	-Y	por	cancelaciones/caídas	(opcional)
-score	=	score_base	+	bonus_tiempo	- penalizaciones
-La	tabla	de	puntajes	se	almacenará	en	un	archivo	JSON	de manera	ordenada	(de	mayor	a	
-menor).
-manejar la lista donde se guardan las puntuaciones
-
-Persistencia de archivos:
-•	Guardado	binario:	/saves/slot1.sav
-•	Puntajes:	/data/puntajes.json
-"""

@@ -87,10 +87,6 @@ class UI:
         pygame.time.wait(3500)
 
     def show_victory_with_final_score(self, score_data):
-        # Guardar puntaje final en scores.json
-        nombre = input("Ingresa tu nombre para guardar el puntaje: ")
-        scoreboard = Scoreboard("data/json_files/scores.json")
-        scoreboard.add_score(nombre, int(score_data['final_score']))
         """
         Muestra la pantalla de victoria con detalles del puntaje final y espera hasta que el jugador presione una tecla.
         """
@@ -101,15 +97,16 @@ class UI:
         title_font = pygame.font.SysFont(None, 60)
         detail_font = pygame.font.SysFont(None, 30)
         small_font = pygame.font.SysFont(None, 24)
+        scoreboard_font = pygame.font.SysFont(None, 28)
 
         # Título principal
         title = title_font.render("¡VICTORIA!", True, (0, 255, 0))
-        title_rect = title.get_rect(center=(constants.WIDTH_SCREEN // 2, 80))
+        title_rect = title.get_rect(center=(constants.WIDTH_SCREEN // 2, 40))
         self.screen.blit(title, title_rect)
 
-        # Detalles del puntaje
-        y_pos = 150
-        line_spacing = 35
+        # --- PRIMERA MITAD: Detalles del puntaje ---
+        y_pos = 80
+        line_spacing = 25
 
         details = [
             f"Ingresos Base: ${score_data['ingresos_base']}",
@@ -140,9 +137,38 @@ class UI:
             self.screen.blit(text, text_rect)
             y_pos += line_spacing
 
+        # --- SEGUNDA MITAD: Scoreboard ---
+        # Guardar puntaje final en scores.json y obtener el índice destacado
+        scoreboard = Scoreboard("data/json_files/scores.json")
+        highlight_idx = scoreboard.add_score(int(score_data['final_score']))
+        scores = scoreboard.get_scores()
+
+        # Título del scoreboard
+        scoreboard_y = constants.HEIGHT_SCREEN // 2 + 20
+        scoreboard_title = detail_font.render("TOP 5 PUNTAJES", True, (255, 255, 0))
+        scoreboard_title_rect = scoreboard_title.get_rect(center=(constants.WIDTH_SCREEN // 2, scoreboard_y))
+        self.screen.blit(scoreboard_title, scoreboard_title_rect)
+
+        # Mostrar top 5 scores
+        scoreboard_y += 40
+        for idx, entry in enumerate(scores):
+            if idx >= 5:  # Solo mostrar top 5
+                break
+
+            # Destacar el nuevo score añadido
+            if idx == highlight_idx:
+                color = (255, 255, 0)  # Amarillo para el nuevo score
+            else:
+                color = (255, 255, 255)  # Blanco para los demás
+
+            score_text = scoreboard_font.render(f"{idx+1}. ${entry['score']}", True, color)
+            score_rect = score_text.get_rect(center=(constants.WIDTH_SCREEN // 2, scoreboard_y))
+            self.screen.blit(score_text, score_rect)
+            scoreboard_y += 30
+
         # Instrucciones
         instruction = small_font.render("Presiona cualquier tecla para salir", True, (200, 200, 200))
-        instruction_rect = instruction.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN - 50))
+        instruction_rect = instruction.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN - 30))
         self.screen.blit(instruction, instruction_rect)
 
         pygame.display.flip()

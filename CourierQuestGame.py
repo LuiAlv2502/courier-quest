@@ -261,19 +261,19 @@ class CourierQuestGame:
         Carga los recursos principales: mapa, trabajos, personaje, HUD y clima.
         Si minimal=True, solo carga lo esencial para restaurar una partida.
         """
-        self.mapa = Map("json_files/city_map.json", tile_size=20, top_bar_height=constants.TOP_BAR_HEIGHT)
+        self.mapa = Map("data/json_files/city_map.json", tile_size=20, top_bar_height=constants.TOP_BAR_HEIGHT)
         # Elegir cargador de trabajos
-        jobs_list = load_jobs("json_files/city_jobs.json")
+        jobs_list = load_jobs("data/json_files/city_jobs.json")
         self.job_manager = JobManager(jobs_list)
         if not minimal:
             self.character = Character(0,0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
-        with open("json_files/city_map.json", "r", encoding="utf-8") as f:
+        with open("data/json_files/city_map.json", "r", encoding="utf-8") as f:
             map_json = json.load(f)["data"]
         self.tiempo_limite = map_json.get("max_time", 120)
         self.objetivo_valor = map_json.get("goal", None)
         self.hud = UI(self.screen)
         from weather import Weather
-        self.weather = Weather("json_files/city_weather.json")
+        self.weather = Weather("data/json_files/city_weather.json")
 
     def create_current_game_state(self):
         """

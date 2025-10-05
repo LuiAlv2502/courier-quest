@@ -22,11 +22,11 @@ def get_latest_cache_file(cache_dir, name):
 
 def save_api_data(data, name, cache_dir="api_cache"):
     """Guarda los datos tanto en json_files como en el caché con timestamp."""
-    os.makedirs("json_files", exist_ok=True)
+    os.makedirs("data/json_files", exist_ok=True)
     os.makedirs(cache_dir, exist_ok=True)
 
-    # Guardar en json_files (archivo principal)
-    main_file = f"json_files/{name}.json"
+    # Guardar en data/json_files (archivo principal)
+    main_file = f"data/json_files/{name}.json"
     with open(main_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
     print(f"Archivo guardado: {name}.json")
@@ -39,7 +39,7 @@ def save_api_data(data, name, cache_dir="api_cache"):
     print(f"Caché guardado: {os.path.basename(cache_file)}")
 
 def load_from_cache(name, cache_dir="api_cache"):
-    """Carga los datos desde el caché más reciente y los copia a json_files."""
+    """Carga los datos desde el caché más reciente y los copia a data/json_files."""
     latest_cache = get_latest_cache_file(cache_dir, name)
 
     if latest_cache and os.path.exists(latest_cache):
@@ -47,8 +47,8 @@ def load_from_cache(name, cache_dir="api_cache"):
         with open(latest_cache, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        os.makedirs("json_files", exist_ok=True)
-        with open(f"json_files/{name}.json", "w", encoding="utf-8") as f:
+        os.makedirs("data/json_files", exist_ok=True)
+        with open(f"data/json_files/{name}.json", "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
         return True

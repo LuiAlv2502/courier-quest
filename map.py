@@ -1,7 +1,6 @@
 import pygame
 import json
 import sys
-import constants
 import os
 
 class Map:
@@ -23,9 +22,13 @@ class Map:
 
         # Cargar sprites de edificios
         self.building_sprites = self.load_building_sprites()
+        # Cargar sprites de parques (grass)
+        self.grass_sprites = self.load_grass_sprites()
+        # Cargar sprites de calles (street)
+        self.street_sprites = self.load_street_sprites()
 
         # Cargar datos
-        self.cargar_desde_json(archivo_json)
+        self.load_from_json(archivo_json)
 
     def load_building_sprites(self):
         """Carga todos los sprites de edificios desde la carpeta sprites/buildings/"""
@@ -44,6 +47,7 @@ class Map:
             "left_border": "left_border.png",
             "right_border": "right_border.png",
             "bottom_border": "bottom_border.png",
+            "top_edge": "top_edge.png",
             "center": "center.png"
         }
 
@@ -60,7 +64,48 @@ class Map:
 
         return sprites
 
-    def cargar_desde_json(self, archivo_json):
+    def load_grass_sprites(self):
+        """Carga el sprite de hierba (grass) directamente sin iterar"""
+        sprites = {}
+        grass_path = os.path.join("sprites", "grass", "grass.png")
+
+        if not os.path.exists(grass_path):
+            print(f"Warning: Grass sprite not found: {grass_path}")
+            return sprites
+
+        try:
+            sprite = pygame.image.load(grass_path).convert_alpha()
+            sprites["center"] = pygame.transform.scale(sprite, (self.tile_size, self.tile_size))
+            # print("Grass sprite loaded successfully: grass.png")  # opcional
+        except Exception as e:
+            print(f"Error loading grass sprite grass.png: {e}")
+
+        return sprites
+
+    def load_street_sprites(self):
+        """Carga el sprite de calles (street) directamente sin iterar"""
+        sprites = {}
+        # Intentamos con una ruta clara: sprites/streets/street.png
+        street_path = os.path.join("sprites", "streets", "street.png")
+
+        if not os.path.exists(street_path):
+            # Intento alternativo común: sprites/street/street.png
+            alt_path = os.path.join("sprites", "street", "street.png")
+            if os.path.exists(alt_path):
+                street_path = alt_path
+            else:
+                print(f"Warning: Street sprite not found: {street_path} (also tried {alt_path})")
+                return sprites
+
+        try:
+            sprite = pygame.image.load(street_path).convert_alpha()
+            sprites["center"] = pygame.transform.scale(sprite, (self.tile_size, self.tile_size))
+        except Exception as e:
+            print(f"Error loading street sprite: {e}")
+
+        return sprites
+
+    def load_from_json(self, archivo_json):
         try:
             with open(archivo_json, "r", encoding="utf-8") as f:
                 data = json.load(f)["data"]
@@ -91,6 +136,24 @@ class Map:
                         screen.blit(self.building_sprites[sprite_type], rect.topleft)
                     else:
                         # Fallback a color sólido si no hay sprite
+                        color = self.colors.get(tile, (0, 0, 0))
+                        pygame.draw.rect(screen, color, rect)
+                elif tile == "P":
+                    # Dibujar sprite de grass fijo para parques
+                    grass_sprite = self.grass_sprites.get("center") if self.grass_sprites else None
+                    if grass_sprite:
+                        screen.blit(grass_sprite, rect.topleft)
+                    else:
+                        # Fallback a color sólido si no hay sprite cargado
+                        color = self.colors.get(tile, (0, 0, 0))
+                        pygame.draw.rect(screen, color, rect)
+                elif tile == "C":
+                    # Dibujar sprite de calle si está disponible
+                    street_sprite = self.street_sprites.get("center") if self.street_sprites else None
+                    if street_sprite:
+                        screen.blit(street_sprite, rect.topleft)
+                    else:
+                        # Fallback a color sólido si no hay sprite cargado
                         color = self.colors.get(tile, (0, 0, 0))
                         pygame.draw.rect(screen, color, rect)
                 else:
@@ -161,7 +224,13 @@ class Map:
             return "right_border"
         elif not has_bottom and (has_left or has_right):
             return "bottom_border"
+        elif not has_top and (has_left or has_right):
+            return "top_edge"
 
         # Centro por defecto
         else:
             return "center"
+
+    def get_grass_sprite_type(self, tile_x, tile_y):
+        """Devuelve el sprite de grass para parques (siempre 'center')"""
+        return "center"
