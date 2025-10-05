@@ -63,7 +63,71 @@ class UI:
         self.screen.blit(reason_text, reason_rect)
         pygame.display.flip()
         pygame.time.wait(2500)
-        
+
+    def show_victory_with_final_score(self, score_data):
+        """
+        Muestra la pantalla de victoria con detalles del puntaje final y espera hasta que el jugador presione una tecla.
+        """
+        # Limpiar pantalla
+        self.screen.fill((0, 0, 0))
+
+        # Fuentes
+        title_font = pygame.font.SysFont(None, 60)
+        detail_font = pygame.font.SysFont(None, 30)
+        small_font = pygame.font.SysFont(None, 24)
+
+        # Título principal
+        title = title_font.render("¡VICTORIA!", True, (0, 255, 0))
+        title_rect = title.get_rect(center=(constants.WIDTH_SCREEN // 2, 80))
+        self.screen.blit(title, title_rect)
+
+        # Detalles del puntaje
+        y_pos = 150
+        line_spacing = 35
+
+        details = [
+            f"Ingresos Base: ${score_data['ingresos_base']}",
+            f"Multiplicador Reputación: x{score_data['pay_mult']:.2f}",
+            f"Score Base: ${score_data['score_base']}",
+            f"Bonus por Tiempo: +${score_data['bonus_tiempo']}",
+            "",  # Línea vacía
+            f"PUNTAJE FINAL: ${score_data['final_score']}",
+            "",
+            f"Reputación Final: {score_data['reputacion']}/100",
+            f"Tiempo Restante: {int(score_data['tiempo_restante'])}s"
+        ]
+
+        for detail in details:
+            if detail == "":
+                y_pos += line_spacing // 2
+                continue
+
+            if "PUNTAJE FINAL" in detail:
+                color = (255, 255, 0)  # Amarillo para el puntaje final
+                font = detail_font
+            else:
+                color = (255, 255, 255)  # Blanco para los demás
+                font = small_font
+
+            text = font.render(detail, True, color)
+            text_rect = text.get_rect(center=(constants.WIDTH_SCREEN // 2, y_pos))
+            self.screen.blit(text, text_rect)
+            y_pos += line_spacing
+
+        # Instrucciones
+        instruction = small_font.render("Presiona cualquier tecla para salir", True, (200, 200, 200))
+        instruction_rect = instruction.get_rect(center=(constants.WIDTH_SCREEN // 2, constants.HEIGHT_SCREEN - 50))
+        self.screen.blit(instruction, instruction_rect)
+
+        pygame.display.flip()
+
+        # Esperar hasta que el jugador presione una tecla
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN:
+                    waiting = False
+
     def draw_weather(self, weather):
         """Muestra el estado actual del clima en la barra superior."""
         if not weather:

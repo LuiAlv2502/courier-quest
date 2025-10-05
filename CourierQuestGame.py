@@ -62,7 +62,7 @@ class CourierQuestGame:
         pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        api.api_request()
+        #api.api_request()
     
     def pause_menu(self):
         """
@@ -277,12 +277,10 @@ class CourierQuestGame:
     def _filter_visible_jobs(self, accepted_ids):
         """Filtra trabajos aceptados de la lista de trabajos visibles"""
         self.job_manager.visible_jobs = [j for j in self.job_manager.visible_jobs if j.id not in accepted_ids]
-        # --- FIN CAMBIO ---
 
         # Resetear cualquier trabajo pendiente mostrado por error
         self.pending_job = None
 
-        print("Estado del juego restaurado correctamente")
 
 
     def load_resources(self, minimal=False):
@@ -552,24 +550,27 @@ class CourierQuestGame:
         reputacion = self.character.reputacion
         # Verifica condiciones de victoria (score objetivo) o derrota (reputación o tiempo agotado)
         if self.character.score >= self.objetivo_valor:
+            # Calcular puntaje final y mostrar victoria con detalles
+            score_data = self.calculate_final_score()
             self.running = False
-            self.hud.show_victory()
+            self.hud.show_victory_with_final_score(score_data)
         elif self.character.reputacion < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
             self.running = False
             self.hud.show_game_over(reason="Reputación baja" if self.character.reputacion < 20 else "Tiempo agotado")
-        self.mapa.draw_map(self.screen)
-        self.character.draw(self.screen)
-        # Definir variables requeridas para HUD
-        tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
-        money_objective = self.objetivo_valor
-        # Dibuja HUD principal (topbar, downbar, resistencia, puntos de pickup/dropoff)
-        self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
-        # Si corresponde, dibuja inventario
-        if self.show_inventory:
-            self.hud.draw_inventory(self.character.inventario, order=self.inventory_order, tiempo_limite=self.tiempo_limite, selected_job_index=self.selected_job_index)
-        # Si corresponde, dibuja menú de decisión de trabajo
-        if self.show_job_decision:
-            self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
+        else:
+            self.mapa.draw_map(self.screen)
+            self.character.draw(self.screen)
+            # Definir variables requeridas para HUD
+            tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
+            money_objective = self.objetivo_valor
+            # Dibuja HUD principal (topbar, downbar, resistencia, puntos de pickup/dropoff)
+            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
+            # Si corresponde, dibuja inventario
+            if self.show_inventory:
+                self.hud.draw_inventory(self.character.inventario, order=self.inventory_order, tiempo_limite=self.tiempo_limite, selected_job_index=self.selected_job_index)
+            # Si corresponde, dibuja menú de decisión de trabajo
+            if self.show_job_decision:
+                self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
 
     def check_win_loss(self):
         """
@@ -610,6 +611,42 @@ class CourierQuestGame:
     def get_weather(self):
         return self.weather
 
+    def calculate_final_score(self):
+        """
+        Calcula el puntaje final según la fórmula:
+        score_base = suma de pagos * pay_mult (por reputación alta)
+        bonus_tiempo = +X si terminas antes del 20% del tiempo restante
+        score = score_base + bonus_tiempo - penalizaciones
+        """
+        # Score base con multiplicador de reputación
+        pay_mult = self.character.reputacion_multiplicador_pago()
+        score_base = int(self.character.score * pay_mult)
+
+        # Bonus por tiempo (si termina antes del 20% del tiempo restante)
+        elapsed_seconds = self._get_elapsed_seconds()
+        tiempo_restante = self.tiempo_limite - elapsed_seconds
+        twenty_percent_time = self.tiempo_limite * 0.2
+
+        bonus_tiempo = 0
+        if tiempo_restante >= twenty_percent_time:
+            # Bonus proporcional al tiempo restante (máximo 500 puntos)
+            bonus_percentage = tiempo_restante / self.tiempo_limite
+            bonus_tiempo = int(500 * bonus_percentage)
+
+        # Penalizaciones (se pueden expandir en el futuro)
+
+        # Score final
+        final_score = score_base + bonus_tiempo
+
+        return {
+            "score_base": score_base,
+            "pay_mult": pay_mult,
+            "bonus_tiempo": bonus_tiempo,
+            "final_score": final_score,
+            "tiempo_restante": tiempo_restante,
+            "reputacion": self.character.reputacion,
+            "ingresos_base": self.character.score
+        }
 
     def run(self):
         """

@@ -4,7 +4,7 @@ class Job:
         self.pickup = tuple(pickup)
         self.dropoff = tuple(dropoff)
         self.payout = payout
-        self.deadline = deadline  # Puede ser string o datetime
+        self.deadline = deadline
         self.weight = weight
         self.priority = priority
         self.release_time = release_time
@@ -36,7 +36,7 @@ class Job:
             'deadline': self.deadline,
             'weight': self.weight,
             'priority': self.priority,
-            'release_time': int(self.release_time)  # Siempre guardar como int
+            'release_time': int(self.release_time)
         }
 
     @classmethod
@@ -50,7 +50,7 @@ class Job:
             data['deadline'],
             data['weight'],
             data['priority'],
-            int(data['release_time'])  # Siempre cargar como int
+            int(data['release_time'])
         )
 
     def is_expired(self, elapsed_seconds):
@@ -58,7 +58,6 @@ class Job:
         Devuelve True si el trabajo ha expirado (el tiempo actual ha superado el deadline).
         El deadline se espera en formato 'HH:MM:SS' o 'HH:MM'.
         """
-        # Si el deadline es string tipo 'TMM:SS' o 'THH:MM:SS', extraer los minutos y segundos
         try:
             if 'T' in self.deadline:
                 time_part = self.deadline.split('T')[1]
