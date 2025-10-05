@@ -55,7 +55,7 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
 ## JobManager (job_manager.py)
 - **Propósito:** Controla la liberación temporal de trabajos disponibles usando cola de prioridad.
 - **Estructura:** 
-  - `job_priority_queue[]`: Min-heap con tuplas (release_time, job_id, job)
+  - `job_priority_queue[]`: cola de prioridad para hacer release de trabajos basado en `release_time`
   - `visible_jobs[]`: Lista de trabajos disponibles para aceptar
 - **Algoritmo:** 
   - **Priority Queue (Min-Heap):** Para liberar trabajos basado en `release_time`
