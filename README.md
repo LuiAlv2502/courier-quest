@@ -149,6 +149,7 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
 
 ---
 
-## ⚠️ Aclaración sobre las *deadlines* en el inventario  
-No se pudo hacer correctamente la representación de los *deadlines* del juego por un cambio en el JSON de la API a último momento.  
+## ⚠️ Aclaración sobre las *deadlines* en el inventario y confusion de velocidad con stamina
+- No se pudo hacer correctamente la representación de los *deadlines* del juego por un cambio en el JSON de la API a último momento.  
 Por lo tanto, los *deadlines* se representan de una manera distinta a la planeada originalmente.
+- La stamina y la velocidad fueron tratadas como el mismo valor por error y por tiempo no pudimos añadir al juego una funcion de velocidad
