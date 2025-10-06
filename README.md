@@ -1,38 +1,41 @@
-# Courier Quest - Estructuras y Algoritmos Principales
 
-Este documento describe las estructuras de datos y algoritmos más importantes usados en el código fuente de Courier Quest.
-
-### Requerimientos y cómo correrlo
-- **Requerimientos:** Tener instalado pygame y requests para poder correr el juego.
-- **¿Cómo correrlo?:** Abrir el archivo main.py y correr el archivo python.
-
-## Controles del Juego
-
-### Movimiento del Personaje
-- **Flechas direccionales (←↑↓→):** Mueve al personaje por el mapa
-- **Z:** Deshacer último movimiento
-
-### Gestión de Trabajos
-- **A:** Aceptar trabajo pendiente
-- **N:** Rechazar trabajo pendiente
-
-### Inventario
-- **I:** Abrir/cerrar inventario de trabajos aceptados
-- **↑↓:** Navegar por los trabajos en el inventario
-- **D:** Ordenar trabajos por deadline (fecha límite)
-- **P:** Ordenar trabajos por prioridad
-- **C:** Cancelar trabajo seleccionado (-4 reputación)
-
-### Sistema de Pausa
-- **ESC:** Pausar el juego
-- **C:** Continuar partida (desde menú de pausa)
-- **G:** Guardar partida (desde menú de pausa)
-- **Q:** Salir del juego (desde menú de pausa)
-
+# 🐎 Courier Quest - Estructuras y Algoritmos Principales 🧐
+Este documento describe las estructuras de datos y algoritmos más importantes usados en el código fuente de **Courier Quest**.
 
 ---
 
-## Stack (stack.py)
+### 📃 Requerimientos y cómo correrlo  
+- **⚙️ Requerimientos:** Tener instalado `pygame` y `requests` para poder correr el juego.  
+- **▶️ ¿Cómo correrlo?:** Abrir el archivo **main.py** y ejecutarlo con Python.
+
+---
+
+## 🎮 Controles del Juego  
+
+### 🕹 Movimiento del Personaje  
+- **Flechas direccionales (←↑↓→):** Mueve al personaje por el mapa  
+- **Z:** Deshacer último movimiento  
+
+### 🛠️ Gestión de Trabajos  
+- **A:** Aceptar trabajo pendiente  
+- **N:** Rechazar trabajo pendiente  
+
+### 🎒 Inventario  
+- **I:** Abrir/cerrar inventario de trabajos aceptados  
+- **↑↓:** Navegar por los trabajos en el inventario  
+- **D:** Ordenar trabajos por deadline (fecha límite)  
+- **P:** Ordenar trabajos por prioridad  
+- **C:** Cancelar trabajo seleccionado (-4 reputación)  
+
+### ⏸️ Sistema de Pausa  
+- **ESC:** Pausar el juego  
+- **C:** Continuar partida  
+- **G:** Guardar partida  
+- **Q:** Salir del juego  
+
+---
+
+## 🧱 Stack (stack.py)
 - **Propósito:** Historial de movimientos del jugador (deshacer movimientos).
 - **Estructura:** Implementación clásica de pila (stack) con métodos push, pop, peek, is_empty.
 - **Algoritmo:** LIFO (Last-In, First-Out) para almacenar y recuperar posiciones previas.
@@ -44,7 +47,7 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
 
 ---
 
-## Inventario (inventory.py)
+## 📦 Inventario (inventory.py)
 - **Propósito:** Gestiona los trabajos aceptados y recogidos por el jugador con dos listas separadas.
 - **Estructura:** 
   - `jobs[]`: Lista de todos los trabajos aceptados
@@ -56,7 +59,9 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - **Búsqueda lineal:** Para cancelación de trabajos por ID
 - **Funcionalidades:** Aceptar, recoger, entregar, cancelar trabajos, control de peso, detección de vecindad
 
-## JobManager (job_manager.py)
+---
+
+## 🕰 JobManager (job_manager.py)
 - **Propósito:** Controla la liberación temporal de trabajos disponibles usando cola de prioridad.
 - **Estructura:** 
   - `job_priority_queue[]`: cola de prioridad para hacer release de trabajos basado en `release_time`
@@ -66,7 +71,9 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - **Búsqueda y filtrado:** Para eliminar trabajos por ID
 - **Funcionalidades:** Liberación temporal automática, gestión de trabajos visibles
 
-## Character (character.py)
+---
+
+## 🧍 Character (character.py)
 - **Propósito:** Representa al jugador con sistema complejo de reputación, resistencia y estadísticas.
 - **Estructura:** 
   - Atributos de posición (tile_x, tile_y), estadísticas (reputación, resistencia, score)
@@ -78,7 +85,9 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - **Gestión de rachas:** Seguimiento de entregas consecutivas sin penalizaciones
 - **Funcionalidades:** Movimiento inteligente, sistema de fatiga, bonificaciones por reputación alta (≥90)
 
-## API y Caché (api.py)
+---
+
+## 🌐 API y Caché (api.py)
 - **Propósito:** Sistema modular de descarga y caché de datos de la API con fallback offline.
 - **Estructura:** 
   - Funciones especializadas: `save_api_data()`, `load_from_cache()`, `get_latest_cache_file()`
@@ -89,7 +98,9 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - **Timestamp con formato:** YYYYMMDD_HHMMSS para versionado de caché
 - **Funcionalidades:** Descarga de 3 endpoints, caché automático, recuperación offline
 
-## CourierQuestGame (CourierQuestGame.py)
+---
+
+## 🔄️ CourierQuestGame (CourierQuestGame.py)
 - **Propósito:** Controlador principal del juego con gestión completa de estado y ciclo de vida.
 - **Estructura:**
   - Variables de estado del juego (running, paused, show_inventory, selected_job_index)
@@ -101,18 +112,17 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - **Game loop:** Actualización de lógica, rendering, detección win/loss
 - **Funcionalidades:** Menú de pausa, sistema de guardado binario, navegación de inventario, gestión temporal
 
-## UI (UI.py)
+---
 
+## 💻 UI (UI.py)
 - **Propósito:** Gestiona toda la interfaz gráfica del jugador, incluyendo HUD, inventario, clima, menús y pantallas de fin de juego.
 - **Estructura:**
   - Fuentes personalizadas para distintos textos y escalado de imágenes HUD.
   - Integración con Scoreboard para mostrar y guardar puntajes.
-
 - **Algoritmos:**
   - Renderizado dinámico: Actualiza en tiempo real reputación, score, tiempo y clima.
   - Ordenamiento visual: Muestra trabajos ordenados por prioridad (Heap Sort) o deadline (Insertion Sort).
   - Gestión de eventos: Navegación con teclado en inventario y menús.
-
 - **Funcionalidades:**
   - Topbar: Muestra puntuación y clima.
   - Downbar: Indica peso, reputación y tiempo restante.
@@ -122,6 +132,23 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - Mapa: Dibuja puntos de recogida (azul) y entrega (naranja).
 
 ---
-## Aclaración las deadlines dentro del inventar
--no se pudo hacer correctamente la representación de los deadlines del juego por un cambio en el json de la api a ultimo momento.
-Por lo tanto los deadlines se representan de una manera a la cual no teníamos pensado.
+
+## 🌦 Weather (Weather.py)
+- **Propósito:** Controla el sistema climático dinámico del juego, afectando el entorno y el rendimiento del jugador.
+- **Estructura:**
+  - Carga configuraciones desde un archivo JSON con condiciones, transiciones y valores iniciales.
+  - Define multiplicadores de rendimiento según el tipo de clima.
+- **Algoritmos:**
+  - Markov: El clima cambia según probabilidades de transición entre estados.
+  - Interpolación lineal: Suaviza el paso entre condiciones (transiciones graduales).
+- **Funcionalidades:**
+  - Actualiza clima cada 45–60 segundos con intensidad aleatoria.
+  - Aplica un multiplicador de rendimiento al jugador según la condición actual.
+  - Gestiona transiciones progresivas entre climas (lluvia, sol, viento, etc.).
+  - Devuelve el estado climático actual con intensidad y factor de impacto.
+
+---
+
+## ⚠️ Aclaración sobre las *deadlines* en el inventario  
+No se pudo hacer correctamente la representación de los *deadlines* del juego por un cambio en el JSON de la API a último momento.  
+Por lo tanto, los *deadlines* se representan de una manera distinta a la planeada originalmente.
