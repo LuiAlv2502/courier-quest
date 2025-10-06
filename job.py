@@ -8,7 +8,7 @@ class Job:
         self.weight = weight
         self.priority = priority
         self.release_time = release_time
-        self.recogido = False
+        self.picked_up = False
 
     def get_release_time(self):
         """Devuelve el tiempo de liberación del trabajo como entero."""
@@ -17,8 +17,8 @@ class Job:
         except (ValueError, TypeError):
             return 0
 
-    def is_recogido(self):
-        return self.recogido
+    def is_picked_up(self):
+        return self.picked_up
 
     def __repr__(self):
         return (
@@ -56,13 +56,15 @@ class Job:
     def is_expired(self, elapsed_seconds):
         """
         Devuelve True si el trabajo ha expirado (el tiempo actual ha superado el deadline).
-        El deadline se espera en formato 'HH:MM:SS' o 'HH:MM'.
+        El deadline se espera en formato 'HH:MM:SS', 'HH:MM' o puede terminar en 'Z'.
         """
         try:
             if 'T' in self.deadline:
                 time_part = self.deadline.split('T')[1]
             else:
                 time_part = self.deadline
+            # Eliminar 'Z' al final si existe
+            time_part = time_part.rstrip('Z')
             parts = time_part.split(":")
             if len(parts) == 2:
                 min_deadline = int(parts[0])
@@ -78,5 +80,3 @@ class Job:
             return elapsed_seconds > deadline_seconds
         except Exception:
             return False
-
-

@@ -347,13 +347,13 @@ class UI:
         # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
         for job in character.inventory.jobs:
             # Solo mostrar pickup si no ha sido recogido
-            if not job.is_recogido():
+            if not job.is_picked_up():
                 px, py = job.pickup
                 pickup_pos = (px * character.tile_size + character.tile_size // 2,
                              py * character.tile_size + character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
                 pygame.draw.circle(self.screen, (0, 120, 255), pickup_pos, character.tile_size // 3)
             # Dropoff: naranja (si ya fue recogido)
-            if job.is_recogido():
+            if job.is_picked_up():
                 dx, dy = job.dropoff
                 dropoff_pos = (dx * character.tile_size + character.tile_size // 2,
                               dy * character.tile_size + character.tile_size // 2 + constants.TOP_BAR_HEIGHT)

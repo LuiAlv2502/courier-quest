@@ -66,6 +66,8 @@ class Character:
         self.deliveres_without_penalization += 1
         self._check_bonus_streak()
 
+    # Alias para compatibilidad con llamadas que usan 'reputacion'
+
     def job_delivered_late_reputacion(self, seconds_late):
         """Entrega tarde: penalización según tiempo tarde"""
         if not self.first_job_late_aplied and self.reputation >= 85:
@@ -251,39 +253,39 @@ class Character:
     def get_score(self):
         """Devuelve la puntuación actual del jugador."""
         return self.score
-    
+
     def get_tile_x(self):
         """Devuelve la posición X en tiles."""
         return self.tile_x
-    
+
     def get_tile_y(self):
         """Devuelve la posición Y en tiles."""
         return self.tile_y
-    
+
     def get_reputacion(self):
         """Devuelve la reputación actual."""
         return self.reputation
-    
+
     def get_resistencia(self):
         """Devuelve la resistencia actual."""
         return self.resistencia
-    
+
     def get_peso_total(self):
         """Devuelve el peso total actual."""
         return self.total_weight
-    
+
     def get_entregas_sin_penalizacion(self):
         """Devuelve el número de entregas sin penalización."""
         return self.deliveres_without_penalization
-    
+
     def get_racha_bonus_aplicado(self):
         """Devuelve si el bonus de racha está aplicado."""
         return self.streak_bonus_applied
-    
+
     def get_primera_tardanza_aplicada(self):
         """Devuelve si la primera tardanza ya fue aplicada."""
         return self.first_job_late_aplied
-    
+
     def get_inventario(self):
         """Devuelve el objeto inventario."""
         return self.inventory

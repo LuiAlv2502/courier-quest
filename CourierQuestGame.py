@@ -1,11 +1,9 @@
 # game.py
 # Archivo principal de lógica del juego Courier Quest
 # Contiene la clase CourierQuestGame y todos los métodos para gestionar el ciclo de juego, guardado, carga, eventos y lógica principal.
-import heapq
 
 import pygame  # Librería para gráficos y eventos
 
-import api
 import constants  # Constantes globales del juego
 from character import Character  # Clase del personaje principal
 from job_loader import load_jobs  # Carga de trabajos desde JSON
@@ -62,7 +60,7 @@ class CourierQuestGame:
         pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        api.api_request()
+        #api.api_request()
     
     def pause_menu(self):
         """
@@ -198,7 +196,7 @@ class CourierQuestGame:
             self.character.inventory.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
         else:
             # Compatibilidad con guardados antiguos: reconstruir picked_jobs desde jobs
-            self.character.inventory.picked_jobs = [job for job in self.character.inventory.jobs if job.is_recogido()]
+            self.character.inventory.picked_jobs = [job for job in self.character.inventory.jobs if job.is_picked_up()]
 
     def _restore_job_manager_data(self, job_data):
         """Restaura los datos del gestor de trabajos (cola de prioridad y trabajos visibles)"""
@@ -394,12 +392,12 @@ class CourierQuestGame:
                                 )
                     # Intentar recoger trabajos si corresponde
                     for job in self.character.inventory.jobs[:]:
-                        if not job.is_recogido():
+                        if not job.is_picked_up():
                             recogido = self.character.inventory.pickup_job(job, (self.character.tile_x, self.character.tile_y))
                             if recogido:
                                 self.character.update_stats()
                     # Solo intentar entregar trabajos que ya estaban recogidos
-                    for job in [j for j in self.character.inventory.jobs if j.is_recogido()]:
+                    for job in [j for j in self.character.inventory.jobs if j.is_picked_up()]:
                         self._process_dropoff_with_reputacion(job)
                         self.character.update_stats()
 
@@ -487,11 +485,15 @@ class CourierQuestGame:
         """
         Elimina trabajos expirados del inventario y aplica penalización.
         """
-        expired_jobs = [job for job in self.character.inventory.jobs if job.is_expired(elapsed_seconds)]
-        for job in expired_jobs:
-            self.character.inventory.remove_job(job)
-            self.character.job_expired_reputation()
-            self.last_deadline_penalty = True
+        # Usamos una copia de la lista para poder modificarla mientras iteramos
+        for job in self.character.inventory.jobs[:]:
+            if job.is_expired(elapsed_seconds):
+                # Eliminar correctamente usando el ID; pasar el objeto no lo elimina
+                self.character.inventory.remove_job(job.id)
+                # Aplicar penalización una vez por frame
+                self.character.job_expired_reputation()
+                self.last_deadline_penalty = True
+                break
 
     def update_game_state(self):
         """

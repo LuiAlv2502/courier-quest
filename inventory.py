@@ -20,7 +20,7 @@ class Inventory:
     def pickup_job(self, job, character_pos, mapa=None):
         # Permitir recoger si el jugador está en el pickup o en un tile vecino
         if self.is_neighbor(character_pos, job.pickup):
-            job.recogido = True
+            job.picked_up = True
             # Mover el trabajo a la lista de recogidos si no está ya ahí
             if job not in self.picked_jobs:
                 self.picked_jobs.append(job)
@@ -29,7 +29,7 @@ class Inventory:
 
     def deliver_job(self, job, character_pos, mapa=None):
         # Si el jugador está en el dropoff (mismo tile o vecino), entrega el trabajo
-        if self.is_neighbor(character_pos, job.dropoff) and job.recogido:
+        if self.is_neighbor(character_pos, job.dropoff) and job.picked_up:
             self.remove_job(job.id)
             return True
         return False
