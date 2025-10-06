@@ -2,6 +2,10 @@
 
 Este documento describe las estructuras de datos y algoritmos más importantes usados en el código fuente de Courier Quest.
 
+### Requerimientos y cómo correrlo
+- **Requerimientos:** Tener instalado pygame y requests para poder correr el juego.
+- **¿Cómo correrlo?:** Abrir el archivo main.py y correr el archivo python.
+
 ## Controles del Juego
 
 ### Movimiento del Personaje
@@ -96,6 +100,26 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
   - **State management:** Guardado/carga de estado completo del juego
   - **Game loop:** Actualización de lógica, rendering, detección win/loss
 - **Funcionalidades:** Menú de pausa, sistema de guardado binario, navegación de inventario, gestión temporal
+
+## UI (UI.py)
+
+**Propósito:** Gestiona toda la interfaz gráfica del jugador, incluyendo HUD, inventario, clima, menús y pantallas de fin de juego.
+-**Estructura:**
+  -Fuentes personalizadas para distintos textos y escalado de imágenes HUD.
+  -Integración con Scoreboard para mostrar y guardar puntajes.
+
+-**Algoritmos:**
+  -Renderizado dinámico: Actualiza en tiempo real reputación, score, tiempo y clima.
+  -Ordenamiento visual: Muestra trabajos ordenados por prioridad (Heap Sort) o deadline (Insertion Sort).
+  -Gestión de eventos: Navegación con teclado en inventario y menús.
+
+-**Funcionalidades:**
+  -Topbar: Muestra puntuación y clima.
+  -Downbar: Indica peso, reputación y tiempo restante.
+  -Resistencia: Usa sprites escalados según estamina.
+  -Inventario: Ventana emergente con trabajos ordenables y seleccionables.
+  -Menús: Pausa, Game Over y Victoria con guardado y tabla de puntajes.
+  -Mapa: Dibuja puntos de recogida (azul) y entrega (naranja).
 
 ---
 ## Aclaración las deadlines dentro del inventar
