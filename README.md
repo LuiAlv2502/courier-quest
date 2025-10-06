@@ -103,23 +103,23 @@ Este documento describe las estructuras de datos y algoritmos más importantes u
 
 ## UI (UI.py)
 
-**Propósito:** Gestiona toda la interfaz gráfica del jugador, incluyendo HUD, inventario, clima, menús y pantallas de fin de juego.
--**Estructura:**
-  -Fuentes personalizadas para distintos textos y escalado de imágenes HUD.
-  -Integración con Scoreboard para mostrar y guardar puntajes.
+- **Propósito:** Gestiona toda la interfaz gráfica del jugador, incluyendo HUD, inventario, clima, menús y pantallas de fin de juego.
+- **Estructura:**
+  - Fuentes personalizadas para distintos textos y escalado de imágenes HUD.
+  - Integración con Scoreboard para mostrar y guardar puntajes.
 
--**Algoritmos:**
-  -Renderizado dinámico: Actualiza en tiempo real reputación, score, tiempo y clima.
-  -Ordenamiento visual: Muestra trabajos ordenados por prioridad (Heap Sort) o deadline (Insertion Sort).
-  -Gestión de eventos: Navegación con teclado en inventario y menús.
+- **Algoritmos:**
+  - Renderizado dinámico: Actualiza en tiempo real reputación, score, tiempo y clima.
+  - Ordenamiento visual: Muestra trabajos ordenados por prioridad (Heap Sort) o deadline (Insertion Sort).
+  - Gestión de eventos: Navegación con teclado en inventario y menús.
 
--**Funcionalidades:**
-  -Topbar: Muestra puntuación y clima.
-  -Downbar: Indica peso, reputación y tiempo restante.
-  -Resistencia: Usa sprites escalados según estamina.
-  -Inventario: Ventana emergente con trabajos ordenables y seleccionables.
-  -Menús: Pausa, Game Over y Victoria con guardado y tabla de puntajes.
-  -Mapa: Dibuja puntos de recogida (azul) y entrega (naranja).
+- **Funcionalidades:**
+  - Topbar: Muestra puntuación y clima.
+  - Downbar: Indica peso, reputación y tiempo restante.
+  - Resistencia: Usa sprites escalados según estamina.
+  - Inventario: Ventana emergente con trabajos ordenables y seleccionables.
+  - Menús: Pausa, Game Over y Victoria con guardado y tabla de puntajes.
+  - Mapa: Dibuja puntos de recogida (azul) y entrega (naranja).
 
 ---
 ## Aclaración las deadlines dentro del inventar
