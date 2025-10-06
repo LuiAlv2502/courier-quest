@@ -2,8 +2,6 @@ import heapq
 
 class JobManager:
     def __init__(self, jobs):
-        # Usar una cola de prioridad (heap) para los trabajos pendientes
-        # Formato: (release_time, job_id, job)
         self.job_priority_queue = []
         for job in jobs:
             self.add_job_to_queue(job)

@@ -1,18 +1,15 @@
-# game.py
-# Archivo principal de lógica del juego Courier Quest
-# Contiene la clase CourierQuestGame y todos los métodos para gestionar el ciclo de juego, guardado, carga, eventos y lógica principal.
+import pygame
 
-import pygame  # Librería para gráficos y eventos
-
-import constants  # Constantes globales del juego
-from character import Character  # Clase del personaje principal
-from job_loader import load_jobs  # Carga de trabajos desde JSON
-from job_manager import JobManager  # Gestión de trabajos disponibles y visibles
-from map import Map  # Clase para el mapa de la ciudad
-from stack import Stack  # Pila para movimientos del personaje (deshacer)
-from UI import UI  # Interfaz de usuario (HUD, menús)
-from SaveData import SaveData  # Guardado y carga de partidas
-import sys  # Para sys.exit()
+import api
+import constants
+from character import Character
+from job_loader import load_jobs
+from job_manager import JobManager
+from map import Map
+from stack import Stack
+from UI import UI
+from SaveData import SaveData
+import sys
 import json
 
 
@@ -38,12 +35,10 @@ class CourierQuestGame:
         self.paused = False  # Estado de pausa
         self.save_system = SaveData()  # Sistema de guardado/carga
 
-        # Nueva bandera para elegir cómo cargar los trabajos
         self.use_plain_jobs = use_plain_jobs
 
         if load_saved_game and saved_game_state is not None:
             self.load_resources(minimal=True)
-            # Crea un personaje "vacío" antes de restaurar el estado
             self.character = Character(0, 0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
             self.restore_game_state(saved_game_state)
         else:
@@ -60,7 +55,7 @@ class CourierQuestGame:
         pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        #api.api_request()
+        api.api_request()
     
     def pause_menu(self):
         """
@@ -71,7 +66,6 @@ class CourierQuestGame:
             self.hud.show_pause_menu()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    # Cerrar el juego completamente al presionar la X
                     self.running = False
                     self.paused = False
                     return
@@ -82,7 +76,7 @@ class CourierQuestGame:
                             pausa_duracion = pygame.time.get_ticks() - self.tiempo_pausa_inicio
                             self.tiempo_inicio += pausa_duracion
                             self.tiempo_pausa_inicio = None
-                    elif event.key == pygame.K_g:  # Guardar partida
+                    elif event.key == pygame.K_g:
                         if self.save_game():
                             print("¡Juego guardado exitosamente!")
                         else:
@@ -91,7 +85,6 @@ class CourierQuestGame:
                         self.running = False
                         self.paused = False
                         return
-            # Si en cualquier momento self.running es False, salir del menú de pausa
             if not self.running:
                 return
 
@@ -130,9 +123,7 @@ class CourierQuestGame:
         self._restore_character_data(components["character"])
         self._restore_inventory_data(components.get("inventory", {}))
         self._restore_job_manager_data(components.get("jobs", {}))
-        # self._filter_accepted_jobs()
 
-        # Resetear cualquier trabajo pendiente mostrado por error
         self.pending_job = None
         print("Game state restored successfully")
 
@@ -146,17 +137,14 @@ class CourierQuestGame:
         self.show_job_decision = game_data.get("show_job_decision", False)
         self.job_decision_message = game_data.get("job_decision_message", "")
 
-        # Ajustar el inicio del tiempo para que el cronómetro continúe donde se guardó
         self._adjust_game_time()
 
     def _adjust_game_time(self):
         """Ajusta el tiempo de inicio del juego para continuar desde donde se guardó"""
         try:
             now_ms = pygame.time.get_ticks()
-            # tiempo_juego_acumulado está en milisegundos
             self.tiempo_inicio = now_ms - int(self.tiempo_juego_acumulado)
         except Exception:
-            # En caso de algún fallo, reiniciar el inicio para evitar crasheos
             self.tiempo_inicio = pygame.time.get_ticks()
 
     def _restore_character_data(self, character_data):
@@ -171,7 +159,6 @@ class CourierQuestGame:
         self.character.streak_bonus_applied = character_data.get("racha_bonus_aplicado", False)
         self.character.first_job_late_aplied = character_data.get("primera_tardanza_aplicada", False)
         
-        # Actualizar posición del personaje en pantalla
         self._update_character_screen_position()
 
     def _update_character_screen_position(self):
@@ -188,14 +175,11 @@ class CourierQuestGame:
         jobs_data = inventory_data.get("jobs", [])
         picked_jobs_data = inventory_data.get("picked_jobs", [])
 
-        # Cargar todos los trabajos
         self.character.inventory.jobs = [Job.from_dict(j) for j in jobs_data]
 
-        # Cargar trabajos recogidos (si existe la información)
         if picked_jobs_data:
             self.character.inventory.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
         else:
-            # Compatibilidad con guardados antiguos: reconstruir picked_jobs desde jobs
             self.character.inventory.picked_jobs = [job for job in self.character.inventory.jobs if job.is_picked_up()]
 
     def _restore_job_manager_data(self, job_data):
@@ -205,7 +189,6 @@ class CourierQuestGame:
         pending_jobs = self._load_pending_jobs(job_data)
         visible_jobs = self._load_visible_jobs(job_data)
 
-        # Crear JobManager con trabajos pendientes
         if pending_jobs or visible_jobs:
             self.job_manager = JobManager(pending_jobs)
             self.job_manager.visible_jobs = visible_jobs
@@ -215,13 +198,11 @@ class CourierQuestGame:
         from job import Job
         pending_jobs = []
 
-        # Cargar desde el nuevo formato (pending_jobs)
         for j in job_data.get("pending_jobs", []):
             job = Job.from_dict(j)
             job.release_time = self._get_release_time_from_data(j)
             pending_jobs.append(job)
 
-        # Compatibilidad: cargar desde formatos antiguos
         for j in job_data.get("available_jobs", []):
             job = Job.from_dict(j)
             job.release_time = self._get_release_time_from_data(j)
@@ -305,7 +286,6 @@ class CourierQuestGame:
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                # Solo cerrar el juego completamente, no ir a menú ni pausar
                 self.running = False
                 return
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -315,9 +295,8 @@ class CourierQuestGame:
                 if event.key == pygame.K_i:
                     self.show_inventory = not self.show_inventory
                     self.inventory_order = None
-                    self.selected_job_index = 0  # Reset selection when opening/closing inventory
+                    self.selected_job_index = 0
                 elif self.show_inventory:
-                    # Get current job list based on order
                     if self.inventory_order == 'deadline':
                         current_jobs = self.character.inventory.filter_by_deadline()
                     elif self.inventory_order == 'priority':
@@ -327,28 +306,22 @@ class CourierQuestGame:
 
                     if event.key == pygame.K_d:
                         self.inventory_order = 'deadline'
-                        self.selected_job_index = 0  # Reset selection when changing order
+                        self.selected_job_index = 0
                     elif event.key == pygame.K_p:
                         self.inventory_order = 'priority'
-                        self.selected_job_index = 0  # Reset selection when changing order
+                        self.selected_job_index = 0
                     elif event.key == pygame.K_UP:
-                        # Navigate up in job list
                         if current_jobs:
                             self.selected_job_index = (self.selected_job_index - 1) % len(current_jobs)
                     elif event.key == pygame.K_DOWN:
-                        # Navigate down in job list
                         if current_jobs:
                             self.selected_job_index = (self.selected_job_index + 1) % len(current_jobs)
                     elif event.key == pygame.K_c:
-                        # Cancel selected job
                         if current_jobs and 0 <= self.selected_job_index < len(current_jobs):
                             selected_job = current_jobs[self.selected_job_index]
                             if self.character.inventory.cancel_job(selected_job.id):
-                                # Apply reputation penalty for canceling (accepted job)
                                 self.character.cancel_job_reputation()
-                                # Update character stats after cancellation
                                 self.character.update_stats()
-                                # Adjust selected index if needed
                                 if self.selected_job_index >= len(current_jobs) - 1:
                                     self.selected_job_index = max(0, len(current_jobs) - 2)
                 elif self.show_job_decision and not self.show_inventory:
@@ -363,7 +336,6 @@ class CourierQuestGame:
                     elif event.key == pygame.K_n:
                         if self.pending_job:
                             self.job_manager.remove_job(self.pending_job.id)
-                        # Apply small reputation penalty for rejecting a pending job
                         self.character.job_rejected_reputation()
                         self.show_job_decision = False
                         self.pending_job = None
@@ -390,13 +362,11 @@ class CourierQuestGame:
                                     self.character.tile_x * self.character.tile_size + self.character.tile_size // 2,
                                     self.character.tile_y * self.character.tile_size + self.character.tile_size // 2 + constants.TOP_BAR_HEIGHT
                                 )
-                    # Intentar recoger trabajos si corresponde
                     for job in self.character.inventory.jobs[:]:
                         if not job.is_picked_up():
                             recogido = self.character.inventory.pickup_job(job, (self.character.tile_x, self.character.tile_y))
                             if recogido:
                                 self.character.update_stats()
-                    # Solo intentar entregar trabajos que ya estaban recogidos
                     for job in [j for j in self.character.inventory.jobs if j.is_picked_up()]:
                         self._process_dropoff_with_reputacion(job)
                         self.character.update_stats()
@@ -407,28 +377,22 @@ class CourierQuestGame:
         """
         entregado = self.character.inventory.deliver_job(job, (self.character.tile_x, self.character.tile_y))
         if entregado:
-            # Calcular tiempo de entrega vs deadline
             try:
-                # Obtener tiempo actual y deadline
                 now = pygame.time.get_ticks()
                 elapsed_seconds = int((now - self.tiempo_inicio) / 1000)
                 tiempo_deadline = job.deadline.split('T')[1]
                 min_deadline = int(tiempo_deadline.split(':')[0])
                 sec_deadline = int(tiempo_deadline.split(':')[1])
                 deadline_seconds = min_deadline * 60 + sec_deadline
-                # Entrega temprana (≥20% antes)
                 if elapsed_seconds <= deadline_seconds - int(0.2 * deadline_seconds):
                     self.character.job_delivered_early_reputation()
-                # Entrega a tiempo
                 elif elapsed_seconds <= deadline_seconds:
                     self.character.job_delivered_in_time_reputation()
-                # Entrega tarde
                 else:
                     segundos_tarde = elapsed_seconds - deadline_seconds
                     self.character.job_delivered_late_reputacion(segundos_tarde)
             except Exception:
                 self.character.job_delivered_in_time_reputation()
-            # Multiplicador de pago por reputación
             payout = int(job.payout * self.character.pay_multiplier_reputation())
             self.character.score += payout
 
@@ -466,9 +430,7 @@ class CourierQuestGame:
         Verifica si hay trabajos listos para ser aceptados y muestra el menú de decisión si corresponde.
         """
         if not self.show_job_decision:
-            # Construir un set de IDs ya aceptados para evitar comparar por instancia
             accepted_ids = {j.id for j in self.character.inventory.jobs}
-            # Tomar el primer trabajo visible que no esté aceptado
             for job in self.job_manager.visible_jobs:
                 if job.id not in accepted_ids:
                     self.pending_job = job
@@ -485,12 +447,9 @@ class CourierQuestGame:
         """
         Elimina trabajos expirados del inventario y aplica penalización.
         """
-        # Usamos una copia de la lista para poder modificarla mientras iteramos
         for job in self.character.inventory.jobs[:]:
             if job.is_expired(elapsed_seconds):
-                # Eliminar correctamente usando el ID; pasar el objeto no lo elimina
                 self.character.inventory.remove_job(job.id)
-                # Aplicar penalización una vez por frame
                 self.character.job_expired_reputation()
                 self.last_deadline_penalty = True
                 break
@@ -507,7 +466,6 @@ class CourierQuestGame:
         self._recover_stamina_if_idle()
         self._remove_expired_jobs(elapsed_seconds)
 
-        # Actualizar estadísticas del personaje continuamente
         self.character.update_stats()
 
     def draw(self):
@@ -515,9 +473,7 @@ class CourierQuestGame:
         Dibuja todos los elementos del juego en pantalla: mapa, personaje, HUD, inventario, etc.
         """
         reputacion = self.character.reputation
-        # Verifica condiciones de victoria (score objetivo) o derrota (reputación o tiempo agotado)
         if self.character.score >= self.objetivo_valor:
-            # Calcular puntaje final y mostrar victoria con detalles
             score_data = self.calculate_final_score()
             self.running = False
             self.hud.show_victory_with_final_score(score_data)
@@ -527,19 +483,14 @@ class CourierQuestGame:
         else:
             self.mapa.draw_map(self.screen)
             self.character.draw(self.screen)
-            # Definir variables requeridas para HUD
             tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
             money_objective = self.objetivo_valor
-            # Dibuja HUD principal (topbar, downbar, resistencia, puntos de pickup/dropoff)
             self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
-            # Si corresponde, dibuja inventario
             if self.show_inventory:
                 self.hud.draw_inventory(self.character.inventory, order=self.inventory_order, tiempo_limite=self.tiempo_limite, selected_job_index=self.selected_job_index)
-            # Si corresponde, dibuja menú de decisión de trabajo
             if self.show_job_decision:
                 self.hud.draw_job_decision(self.pending_job, job_decision_message=self.job_decision_message)
 
-    # Métodos getter para exponer información relevante del estado del juego
     def get_tiempo_juego_acumulado(self):
         return self.tiempo_juego_acumulado
 
@@ -574,22 +525,18 @@ class CourierQuestGame:
         bonus_tiempo = +X si terminas antes del 20% del tiempo restante
         score = score_base + bonus_tiempo - penalizaciones
         """
-        # Score base con multiplicador de reputación
         pay_mult = self.character.pay_multiplier_reputation()
         score_base = int(self.character.score * pay_mult)
 
-        # Bonus por tiempo (si termina antes del 20% del tiempo restante)
         elapsed_seconds = self._get_elapsed_seconds()
         tiempo_restante = self.tiempo_limite - elapsed_seconds
         twenty_percent_time = self.tiempo_limite * 0.2
 
         bonus_tiempo = 0
         if tiempo_restante >= twenty_percent_time:
-            # Bonus proporcional al tiempo restante (máximo 500 puntos)
             bonus_percentage = tiempo_restante / self.tiempo_limite
             bonus_tiempo = int(500 * bonus_percentage)
 
-        # Penalizaciones (se pueden expandir en el futuro)
 
         # Score final
         final_score = score_base + bonus_tiempo
@@ -616,7 +563,6 @@ class CourierQuestGame:
                 self.draw()
             pygame.display.flip()
             clock.tick(constants.FPS)
-        # Cerrar Pygame y el proceso completamente al salir del bucle principal
         pygame.mixer.music.stop()
         pygame.quit()
 

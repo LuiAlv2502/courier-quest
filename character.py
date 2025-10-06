@@ -155,10 +155,8 @@ class Character:
         if hasattr(self, 'character_sprites') and self.character_sprites:
             sprite = self.character_sprites.get(self.facing)
         if sprite:
-            # Asegurar que el sprite tiene el tamaño del rectángulo del personaje
             screen.blit(sprite, self.shape.topleft)
         else:
-            # Fallback a un rectángulo si no hay sprite
             pygame.draw.rect(screen, constants.COLOR_CHARACTER, self.shape)
 
     def restore_stamina(self, segundos=1):
@@ -243,7 +241,6 @@ class Character:
                 self.facing = "left"
             elif dx > 0:
                 self.facing = "right"
-            # si dx=dy=0, mantenemos la dirección actual
 
             # Actualiza resistencia y timestamp de movimiento
             self.update_stamina(mapa, velocidad)

@@ -1,10 +1,5 @@
 import heapq
 
-# Inventario: gestiona los trabajos aceptados y recogidos por el jugador
-# Algoritmos clave:
-# - Heap Sort para filtrar por prioridad
-# - Insertion Sort para ordenar por deadline
-
 class Inventory:
     def __init__(self, max_weight):
         self.max_weight = max_weight

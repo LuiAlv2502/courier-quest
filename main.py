@@ -6,11 +6,9 @@ from main_menu import MainMenu
 from CourierQuestGame import CourierQuestGame
 
 def main():
-    # Cambiar al directorio donde está el script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
     
-    # Inicializar Pygame
     screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
     pygame.display.set_caption("Courier Quest")
     
@@ -33,7 +31,6 @@ def main():
             else:
                 print("No se pudo cargar la partida")
                 # Volver al menú principal
-    # Solo se llama a pygame.quit() y sys.exit() después de salir del bucle
     pygame.quit()
     sys.exit()
 

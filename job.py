@@ -63,7 +63,6 @@ class Job:
                 time_part = self.deadline.split('T')[1]
             else:
                 time_part = self.deadline
-            # Eliminar 'Z' al final si existe
             time_part = time_part.rstrip('Z')
             parts = time_part.split(":")
             if len(parts) == 2:

@@ -231,9 +231,6 @@ class UI:
         else:
             timer_text = self.font.render("Tiempo: 00:00", True, (255, 255, 255))
         self.screen.blit(timer_text, (450, constants.HEIGHT_SCREEN - hud_height + 15))
-        #info_text = self.font_info.render("[Z] Deshacer movimiento", True, (255, 255, 255))
-        #info_rect = info_text.get_rect(topright=(constants.WIDTH_SCREEN - 20, 10))
-        #self.screen.blit(info_text, info_rect)
 
     def draw_resistencia(self, character):
         hud_height = 55
@@ -263,7 +260,7 @@ class UI:
         popup_height = 400
         popup_x = (constants.WIDTH_SCREEN - popup_width) // 2
         popup_y = (constants.HEIGHT_SCREEN - popup_height) // 2
-        # Dibujar fondo negro semitransparente
+
         popup_surface = pygame.Surface((popup_width, popup_height), pygame.SRCALPHA)
         popup_surface.fill((0, 0, 0, 220))  # Negro con opacidad
         self.screen.blit(popup_surface, (popup_x, popup_y))

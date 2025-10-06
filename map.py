@@ -13,7 +13,6 @@ class Map:
         self.top_bar_height = top_bar_height
         self.hud_height = hud_height
 
-        # Colores por defecto
         self.colors = {
             "C": (200, 200, 200),  # Calles
             "B": (100, 50, 50),    # Edificios
@@ -76,7 +75,6 @@ class Map:
         try:
             sprite = pygame.image.load(grass_path).convert_alpha()
             sprites["center"] = pygame.transform.scale(sprite, (self.tile_size, self.tile_size))
-            # print("Grass sprite loaded successfully: grass.png")  # opcional
         except Exception as e:
             print(f"Error loading grass sprite grass.png: {e}")
 
@@ -85,11 +83,9 @@ class Map:
     def load_street_sprites(self):
         """Carga el sprite de calles (street) directamente sin iterar"""
         sprites = {}
-        # Intentamos con una ruta clara: sprites/streets/street.png
         street_path = os.path.join("sprites", "streets", "street.png")
 
         if not os.path.exists(street_path):
-            # Intento alternativo común: sprites/street/street.png
             alt_path = os.path.join("sprites", "street", "street.png")
             if os.path.exists(alt_path):
                 street_path = alt_path
@@ -189,7 +185,6 @@ class Map:
         if not self.is_building(tile_x, tile_y):
             return "center"  # fallback
 
-        # Verificar vecinos en las 8 direcciones
         neighbors = {
             "top": self.is_building(tile_x, tile_y - 1),
             "bottom": self.is_building(tile_x, tile_y + 1),
