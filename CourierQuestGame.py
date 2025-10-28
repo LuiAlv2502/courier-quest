@@ -11,6 +11,7 @@ from UI import UI
 from SaveData import SaveData
 import sys
 import json
+from AIController import AIController
 
 
 class CourierQuestGame:
@@ -232,6 +233,14 @@ class CourierQuestGame:
         }
 
     def handle_events(self):
+        for job in self.aiCharacter.inventory.jobs[:]:
+            if not job.is_picked_up():
+                if self.aiCharacter.inventory.pickup_job(job, (self.aiCharacter.tile_x, self.aiCharacter.tile_y)):
+                        self.aiCharacter.update_stats()
+        for job in [j for j in self.aiCharacter.inventory.jobs if j.is_picked_up()]:
+            self._process_dropoff_for(self.aiCharacter, job)
+            self.aiCharacter.update_stats()
+        self.handle_ai_movement()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -275,7 +284,9 @@ class CourierQuestGame:
                 elif self.show_job_decision and not self.show_inventory:
                     if event.key == pygame.K_a:
                         if self.pending_job and self.character.inventory.accept_job(self.pending_job):
-                            self.aiCharacter.inventory.accept_job(self.pending_job)
+                            # Crear una copia independiente del trabajo para el AI
+                            ai_job_copy = self.pending_job.copy()
+                            self.aiCharacter.inventory.accept_job(ai_job_copy)
                             self.job_manager.remove_job(self.pending_job.id)
                             self.show_job_decision = False
                             self.pending_job = None
@@ -323,18 +334,23 @@ class CourierQuestGame:
                         self._process_dropoff_for(self.character, job)
                         self.character.update_stats()
                     # AI inventory processing (static AI)
-                    if hasattr(self, 'aiCharacter') and self.aiCharacter is not None:
-                        for job in self.aiCharacter.inventory.jobs[:]:
-                            if not job.is_picked_up():
-                                if self.aiCharacter.inventory.pickup_job(job, (self.aiCharacter.tile_x, self.aiCharacter.tile_y)):
-                                    self.aiCharacter.update_stats()
-                        for job in [j for j in self.aiCharacter.inventory.jobs if j.is_picked_up()]:
-                            self._process_dropoff_for(self.aiCharacter, job)
-                            self.aiCharacter.update_stats()
+
+                        
+    def handle_ai_movement(self):
+        #use AIController to manage AI movement
+        ai_controller = AIController(dificulty="easy", inventory=self.aiCharacter.inventory, game=self)
+        dx, dy = ai_controller.manage_move(self.aiCharacter)
+        self.aiCharacter.movement(dx, dy, self.mapa, weather=self.weather)
+        if self.aiCharacter.resistencia_exhausto:
+            self.aiCharacter.restore_stamina()
+            return
+        print(self.aiCharacter.inventory.picked_jobs)
+
 
     def _process_dropoff_with_reputacion(self, job):
         # Mantener compatibilidad: usa el helper generalizado para el jugador
         self._process_dropoff_for(self.character, job)
+        self._process_dropoff_for(self.aiCharacter, job)
 
     def _process_dropoff_for(self, who: Character, job):
         entregado = who.inventory.deliver_job(job, (who.tile_x, who.tile_y))
@@ -358,6 +374,9 @@ class CourierQuestGame:
                 who.job_delivered_in_time_reputation()
             payout = int(job.payout * who.pay_multiplier_reputation())
             who.score += payout
+    def _update_movement_ai(self):
+        # AI estático: sin movimiento
+        pass
 
     def _init_time_if_needed(self):
         if self.tiempo_inicio is None:
@@ -408,7 +427,7 @@ class CourierQuestGame:
         # AI estático: sin movimiento
 
     def draw(self):
-        print(self.aiCharacter.inventory.jobs)
+        print(self.aiCharacter.inventory.picked_jobs)
         reputacion = self.character.reputation
         if self.character.score >= self.objetivo_valor:
             score_data = self.calculate_final_score()
@@ -420,11 +439,10 @@ class CourierQuestGame:
         else:
             self.mapa.draw_map(self.screen)
             self.character.draw(self.screen)
-            if hasattr(self, 'aiCharacter') and self.aiCharacter is not None:
-                self.aiCharacter.draw(self.screen)
+            self.aiCharacter.draw(self.screen)
             tiempo_restante = max(0, self.tiempo_limite - self._get_elapsed_seconds())
             money_objective = self.objetivo_valor
-            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather)
+            self.hud.draw(self.character, tiempo_restante=tiempo_restante, money_objective=money_objective, reputacion=reputacion, weather=self.weather, ai_character=self.aiCharacter)
             if self.show_inventory:
                 self.hud.draw_inventory(self.character.inventory, order=self.inventory_order, tiempo_limite=self.tiempo_limite, selected_job_index=self.selected_job_index)
             if self.show_job_decision:

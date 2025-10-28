@@ -20,6 +20,21 @@ class Job:
     def is_picked_up(self):
         return self.picked_up
 
+    def copy(self):
+        """Crea una copia independiente del Job."""
+        new_job = Job(
+            self.id,
+            self.pickup,
+            self.dropoff,
+            self.payout,
+            self.deadline,
+            self.weight,
+            self.priority,
+            self.release_time
+        )
+        new_job.picked_up = self.picked_up
+        return new_job
+
     def __repr__(self):
         return (
             f"Job(id={self.id}, prioridad={self.priority}, peso={self.weight}, "

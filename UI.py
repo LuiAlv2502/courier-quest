@@ -340,8 +340,8 @@ class UI:
             msg_rect = msg_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2 + 40))
             self.screen.blit(msg_text, msg_rect)
 
-    def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None):
-        # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
+    def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None, ai_character=None):
+        # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados del jugador ---
         for job in character.inventory.jobs:
             # Solo mostrar pickup si no ha sido recogido
             if not job.is_picked_up():
@@ -355,6 +355,23 @@ class UI:
                 dropoff_pos = (dx * character.tile_size + character.tile_size // 2,
                               dy * character.tile_size + character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
                 pygame.draw.circle(self.screen, (255, 140, 0), dropoff_pos, character.tile_size // 3)
+        
+        # --- Dibujar puntos de pickup y dropoff del AI character (para debug) ---
+        if ai_character:
+            for job in ai_character.inventory.jobs:
+                # Solo mostrar pickup si no ha sido recogido - Color verde claro
+                if not job.is_picked_up():
+                    px, py = job.pickup
+                    pickup_pos = (px * ai_character.tile_size + ai_character.tile_size // 2,
+                                 py * ai_character.tile_size + ai_character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
+                    pygame.draw.circle(self.screen, (0, 255, 150), pickup_pos, ai_character.tile_size // 3)
+                # Dropoff: magenta (si ya fue recogido)
+                if job.is_picked_up():
+                    dx, dy = job.dropoff
+                    dropoff_pos = (dx * ai_character.tile_size + ai_character.tile_size // 2,
+                                  dy * ai_character.tile_size + ai_character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
+                    pygame.draw.circle(self.screen, (255, 0, 255), dropoff_pos, ai_character.tile_size // 3)
+        
         self.draw_topbar(character, money_objective, weather)
         self.draw_downbar(character, tiempo_restante, reputacion)
         self.draw_resistencia(character)
