@@ -35,6 +35,10 @@ class CourierQuestGame:
         self.save_system = SaveData()
         self.use_plain_jobs = use_plain_jobs
 
+        # AI movement timer variables
+        self.ai_last_move_time = 0
+        self.ai_move_interval = 0  # Move every 1000ms (1 second)
+
         if load_saved_game and saved_game_state is not None:
             self.load_resources(minimal=True)
             self.character = Character(0, 0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
@@ -338,9 +342,14 @@ class CourierQuestGame:
                         
     def handle_ai_movement(self):
         #use AIController to manage AI movement
-        ai_controller = AIController(dificulty="easy", inventory=self.aiCharacter.inventory, game=self)
-        dx, dy = ai_controller.manage_move(self.aiCharacter)
-        self.aiCharacter.movement(dx, dy, self.mapa, weather=self.weather)
+        ai_controller = AIController(dificulty="medium", game=self)
+        current_time = pygame.time.get_ticks()
+        if current_time - self.ai_last_move_time >= self.ai_move_interval:
+            dx, dy = ai_controller.manage_move(self.aiCharacter, self.weather,self.aiCharacter.inventory)
+            print(dx)
+            print (dy)
+            self.aiCharacter.movement(dx, dy, self.mapa, weather=self.weather)
+            self.ai_last_move_time = current_time
         if self.aiCharacter.resistencia_exhausto:
             self.aiCharacter.restore_stamina()
             return
