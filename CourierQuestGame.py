@@ -37,7 +37,7 @@ class CourierQuestGame:
 
         # AI movement timer variables
         self.ai_last_move_time = 0
-        self.ai_move_interval = 0  # Move every 1000ms (1 second)
+        self.ai_move_interval = 300 # Move every 1000ms (1 second)
 
         if load_saved_game and saved_game_state is not None:
             self.load_resources(minimal=True)
@@ -55,7 +55,7 @@ class CourierQuestGame:
         pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        api.api_request()
+        #api.api_request()
 
     def pause_menu(self):
         self.tiempo_pausa_inicio = pygame.time.get_ticks()
@@ -342,7 +342,7 @@ class CourierQuestGame:
                         
     def handle_ai_movement(self):
         #use AIController to manage AI movement
-        ai_controller = AIController(dificulty="medium", game=self)
+        ai_controller = AIController(dificulty="hard", game=self)
         current_time = pygame.time.get_ticks()
         if current_time - self.ai_last_move_time >= self.ai_move_interval:
             dx, dy = ai_controller.manage_move(self.aiCharacter, self.weather,self.aiCharacter.inventory)
