@@ -193,8 +193,10 @@ class SaveData:
         """
         return {
             "character": game_state.get("character", {}),
+            "ai_character": game_state.get("ai_character", {}),
             "game": game_state.get("game", {}),
             "inventory": game_state.get("inventory", {}),
+            "ai_inventory": game_state.get("ai_inventory", {}),
             "jobs": game_state.get("jobs", {}),
             "map": game_state.get("map", {}),
             "weather": game_state.get("weather", {})

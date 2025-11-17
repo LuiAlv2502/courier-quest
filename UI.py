@@ -340,8 +340,81 @@ class UI:
             msg_rect = msg_text.get_rect(center=(constants.WIDTH_SCREEN//2, constants.HEIGHT_SCREEN//2 + 40))
             self.screen.blit(msg_text, msg_rect)
 
-    def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None):
-        # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados ---
+    def draw_difficulty_popup(self, options, selected_idx):
+        """Dibuja el popup de selección de dificultad. No maneja eventos, solo dibuja el estado actual.
+        options: lista de strings (etiquetas a mostrar).
+        selected_idx: índice seleccionado actualmente.
+        """
+        popup_w = 480
+        popup_h = 160
+        popup_x = (constants.WIDTH_SCREEN - popup_w) // 2
+        popup_y = (constants.HEIGHT_SCREEN - popup_h) // 2
+
+        hud_img = pygame.transform.scale(self.hud_img, (popup_w, popup_h))
+        self.screen.blit(hud_img, (popup_x, popup_y))
+
+        title_font = pygame.font.SysFont(None, 34)
+        title = title_font.render("Selecciona la dificultad de la AI", True, (255, 255, 0))
+        title_rect = title.get_rect(center=(constants.WIDTH_SCREEN // 2, popup_y + 28))
+        self.screen.blit(title, title_rect)
+
+        opt_font = pygame.font.SysFont(None, 28)
+        spacing = 140
+        start_x = constants.WIDTH_SCREEN // 2 - spacing
+        y = popup_y + 80
+        for i, opt in enumerate(options):
+            color = (255, 255, 0) if i == selected_idx else (230, 230, 230)
+            text = opt_font.render(opt.capitalize(), True, color)
+            text_rect = text.get_rect(center=(start_x + i * spacing, y))
+            self.screen.blit(text, text_rect)
+
+        help_font = pygame.font.SysFont(None, 20)
+        help = help_font.render("← → : mover  | Enter: confirmar  | Esc: cancelar (medium por defecto)", True, (200, 200, 200))
+        help_rect = help.get_rect(center=(constants.WIDTH_SCREEN // 2, popup_y + popup_h - 20))
+        self.screen.blit(help, help_rect)
+        pygame.display.flip()
+
+    def run_difficulty_selector(self, initial='medium'):
+        """Muestra un selector modal para elegir la dificultad de la AI.
+        Devuelve una de: 'easy', 'medium', 'hard' o None si se cancela.
+        """
+        options = ['easy', 'medium', 'hard']
+        try:
+            selected_idx = options.index(initial) if initial in options else 1
+        except Exception:
+            selected_idx = 1
+
+        clock = pygame.time.Clock()
+        selecting = True
+        while selecting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return None
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        selected_idx = (selected_idx - 1) % len(options)
+                    elif event.key == pygame.K_RIGHT:
+                        selected_idx = (selected_idx + 1) % len(options)
+                    elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                        return options[selected_idx]
+                    elif event.key == pygame.K_ESCAPE:
+                        return None
+                    elif event.key == pygame.K_1:
+                        return options[0]
+                    elif event.key == pygame.K_2:
+                        return options[1]
+                    elif event.key == pygame.K_3:
+                        return options[2]
+
+            # Dim the background
+            overlay = pygame.Surface((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 160))
+            self.screen.blit(overlay, (0, 0))
+            self.draw_difficulty_popup(options, selected_idx)
+            clock.tick(30)
+
+    def draw(self, character, tiempo_restante=None, money_objective=None, reputacion=None, weather= None, ai_character=None):
+        # --- Dibujar puntos de pickup y dropoff de los trabajos aceptados del jugador ---
         for job in character.inventory.jobs:
             # Solo mostrar pickup si no ha sido recogido
             if not job.is_picked_up():
@@ -355,6 +428,23 @@ class UI:
                 dropoff_pos = (dx * character.tile_size + character.tile_size // 2,
                               dy * character.tile_size + character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
                 pygame.draw.circle(self.screen, (255, 140, 0), dropoff_pos, character.tile_size // 3)
+        
+        # --- Dibujar puntos de pickup y dropoff del AI character (para debug) ---
+        if ai_character:
+            for job in ai_character.inventory.jobs:
+                # Solo mostrar pickup si no ha sido recogido - Color verde claro
+                if not job.is_picked_up():
+                    px, py = job.pickup
+                    pickup_pos = (px * ai_character.tile_size + ai_character.tile_size // 2,
+                                 py * ai_character.tile_size + ai_character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
+                    pygame.draw.circle(self.screen, (0, 255, 150), pickup_pos, ai_character.tile_size // 3)
+                # Dropoff: magenta (si ya fue recogido)
+                if job.is_picked_up():
+                    dx, dy = job.dropoff
+                    dropoff_pos = (dx * ai_character.tile_size + ai_character.tile_size // 2,
+                                  dy * ai_character.tile_size + ai_character.tile_size // 2 + constants.TOP_BAR_HEIGHT)
+                    pygame.draw.circle(self.screen, (255, 0, 255), dropoff_pos, ai_character.tile_size // 3)
+        
         self.draw_topbar(character, money_objective, weather)
         self.draw_downbar(character, tiempo_restante, reputacion)
         self.draw_resistencia(character)
