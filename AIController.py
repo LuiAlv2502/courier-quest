@@ -281,45 +281,40 @@ class AIController:
         char_inventory = inventory if inventory is not None else character.inventory
 
         # Check picked up jobs (ready for delivery) using get_picked_jobs()
-        if char_inventory and hasattr(char_inventory, 'get_picked_jobs'):
-            picked_jobs = char_inventory.get_picked_jobs()
-            for job in picked_jobs:
-                # Job is picked up, calculate distance to dropoff
-                distance = abs(character.tile_x - job.dropoff[0]) + abs(character.tile_y - job.dropoff[1])
-                # Always give value to picked up jobs regardless of distance (already committed)
-                if distance <= 15:
-                    # High value for nearby deliveries
-                    payout += job.payout / (distance + 1) * 3.0
-                elif distance <= 30:
-                    # Medium value for moderately distant deliveries
-                    payout += job.payout / (distance + 1) * 2.0
-                else:
-                    # Still some value for very distant deliveries
-                    payout += job.payout / (distance + 1) * 1.5
+        picked_jobs = char_inventory.get_picked_jobs()
+        for job in picked_jobs:
+            # Job is picked up, calculate distance to dropoff
+            distance = abs(character.tile_x - job.dropoff[0]) + abs(character.tile_y - job.dropoff[1])
+            # Always give value to picked up jobs regardless of distance (already committed)
+            if distance <= 15:
+                # High value for nearby deliveries
+                payout += job.payout / (distance + 1) * 3.0
+            elif distance <= 30:
+                # Medium value for moderately distant deliveries
+                payout += job.payout / (distance + 1) * 2.0
+            else:
+                # Still some value for very distant deliveries
+                payout += job.payout / (distance + 1) * 1.5
 
         # Check accepted but not picked up jobs using get_jobs()
-        if char_inventory and hasattr(char_inventory, 'get_jobs'):
-            all_jobs = char_inventory.get_jobs()
-            for job in all_jobs:
-                if not job.is_picked_up():
-                    # Job needs pickup
-                    distance = abs(character.tile_x - job.pickup[0]) + abs(character.tile_y - job.pickup[1])
-                    if distance <= 15:
-                        # Good value for nearby pickups
-                        payout += job.payout / (distance + 1) * 0.8
-                    elif distance <= 30:
-                        # Some value for distant pickups
-                        payout += job.payout / (distance + 1) * 0.5
-                    else:
-                        # Minimal value for very distant pickups
-                        payout += job.payout / (distance + 1) * 0.3
+        all_jobs = char_inventory.get_jobs()
+        for job in all_jobs:
+            if not job.is_picked_up():
+                # Job needs pickup
+                distance = abs(character.tile_x - job.pickup[0]) + abs(character.tile_y - job.pickup[1])
+                if distance <= 15:
+                    # Good value for nearby pickups
+                    payout += job.payout / (distance + 1) * 0.8
+                elif distance <= 30:
+                    # Some value for distant pickups
+                    payout += job.payout / (distance + 1) * 0.5
+                else:
+                    # Minimal value for very distant pickups
+                    payout += job.payout / (distance + 1) * 0.3
 
         # Also check visible jobs from job_manager for new opportunities
         visible_jobs = []
-        if hasattr(self.game.job_manager, 'visible_jobs'):
-            visible_jobs = self.game.job_manager.visible_jobs
-        elif hasattr(self.game.job_manager, 'show_jobs'):
-            visible_jobs = self.game.job_manager.show_jobs()
+        visible_jobs = self.game.job_manager.visible_jobs
 
         for job in visible_jobs:
             if not job.is_picked_up():
@@ -350,23 +345,21 @@ class AIController:
         cost = 0.0
 
         # Use passed inventory or character's inventory
-        char_inventory = inventory if inventory is not None else getattr(character, 'inventory', None)
+        char_inventory = inventory
 
         # Stamina penalty (low stamina = high cost to move)
         if character.resistencia < 30:
             cost += 10.0
 
         # Weight penalty from inventory (more weight = harder to move)
-        if char_inventory and hasattr(char_inventory, 'get_current_weight'):
-            total_weight = char_inventory.get_current_weight()
-            cost += total_weight * 0.5  # Weight increases movement cost
+        total_weight = char_inventory.get_current_weight()
+        cost += total_weight * 0.5  # Weight increases movement cost
 
         # Weather movement penalty (bad weather = harder to move)
-        if weather and hasattr(weather, 'current_multiplier'):
-            weather_mult = weather.current_multiplier
-            if weather_mult < 1.0:
-                # Bad weather increases movement cost
-                cost += (1.0 - weather_mult) * 3.0
+        weather_mult = weather.current_multiplier
+        if weather_mult < 1.0:
+            # Bad weather increases movement cost
+            cost += (1.0 - weather_mult) * 3.0
 
         return cost
 
@@ -377,21 +370,15 @@ class AIController:
         """
         if not weather:
             # Try to get weather from game if not passed
-            if self.game and hasattr(self.game, 'weather'):
-                weather = self.game.weather
-            else:
-                return 0.0
+            weather = self.game.weather
 
-        if hasattr(weather, 'current_multiplier'):
-            weather_multiplier = weather.current_multiplier
-            return (1.0 - weather_multiplier) * 5.0 if weather_multiplier < 1.0 else 0.0
+        weather_multiplier = weather.current_multiplier
+        return (1.0 - weather_multiplier) * 5.0 if weather_multiplier < 1.0 else 0.0
 
-        return 0.0
+
 
     def is_valid_move(self, character, move):
         """Check if move is valid."""
-        if not self.game or not hasattr(self.game, 'mapa'):
-            return True
 
         new_x = character.tile_x + move[0]
         new_y = character.tile_y + move[1]
@@ -419,7 +406,7 @@ class AIController:
         if character.resistencia_exhausto:
             return (0, 0)
 
-        char_inventory = inventory if inventory is not None else getattr(character, 'inventory', None)
+        char_inventory = inventory
 
         # Construir/actualizar el grafo de la ciudad si es necesario
         if self.city_graph is None or self.graph_needs_update:
