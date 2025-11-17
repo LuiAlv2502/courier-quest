@@ -69,29 +69,16 @@ class AIController:
         has_jobs = False
 
         # Check for picked up jobs (ready for delivery)
-        if char_inventory and hasattr(char_inventory, 'get_picked_jobs'):
-            picked_jobs = char_inventory.get_picked_jobs()
-            if picked_jobs:
-                has_jobs = True
+        picked_jobs = char_inventory.get_picked_jobs()
+        if picked_jobs:
+            has_jobs = True
 
         # Check for accepted but not picked up jobs
-        if char_inventory and hasattr(char_inventory, 'get_jobs'):
-            all_jobs = char_inventory.get_jobs()
-            for job in all_jobs:
-                if not job.is_picked_up():
-                    has_jobs = True
-                    break
-
-        # Check for visible jobs from job_manager
-        if not has_jobs and self.game and hasattr(self.game, 'job_manager'):
-            visible_jobs = []
-            if hasattr(self.game.job_manager, 'visible_jobs'):
-                visible_jobs = self.game.job_manager.visible_jobs
-            elif hasattr(self.game.job_manager, 'show_jobs'):
-                visible_jobs = self.game.job_manager.show_jobs()
-
-            if visible_jobs:
+        all_jobs = char_inventory.get_jobs()
+        for job in all_jobs:
+            if not job.is_picked_up():
                 has_jobs = True
+                break
 
         # If no jobs available, stay still
         if not has_jobs:
@@ -286,13 +273,12 @@ class AIController:
         - Divide entre distancia para priorizar trabajos cercanos
         - Multiplica por peso según tipo y distancia
         """
-        if not self.game or not hasattr(self.game, 'job_manager'):
-            return 0.0
+
 
         payout = 0.0
 
         # Use passed inventory or character's inventory
-        char_inventory = inventory if inventory is not None else getattr(character, 'inventory', None)
+        char_inventory = inventory if inventory is not None else character.inventory
 
         # Check picked up jobs (ready for delivery) using get_picked_jobs()
         if char_inventory and hasattr(char_inventory, 'get_picked_jobs'):
@@ -507,8 +493,6 @@ class AIController:
 
         Usa nx.DiGraph() para grafo dirigido (aunque en este caso es simétrico)
         """
-        if not self.game or not hasattr(self.game, 'mapa'):
-            return
 
         mapa = self.game.mapa
         # Crear grafo dirigido
@@ -551,8 +535,13 @@ class AIController:
 
                         # Verificar que el vecino está en el grafo
                         if (neighbor_x, neighbor_y) in self.city_graph:
-                            # Calcular peso de la arista
-                            edge_weight = self.get_tile_cost(neighbor_x, neighbor_y, weather)
+                            # Verificar si el tile destino está bloqueado
+                            if mapa.is_blocked(neighbor_x, neighbor_y):
+                                # Si el tile está bloqueado, el camino hacia él tiene peso 10
+                                edge_weight = 10.0
+                            else:
+                                # Calcular peso normal de la arista
+                                edge_weight = self.get_tile_cost(neighbor_x, neighbor_y, weather)
 
                             # Agregar arista con peso
                             self.city_graph.add_edge((x, y), (neighbor_x, neighbor_y), weight=edge_weight)
@@ -563,23 +552,19 @@ class AIController:
 
         Costo = peso_superficie + modificador_clima
         """
-        if not self.game or not hasattr(self.game, 'mapa'):
-            return 1.0
 
         mapa = self.game.mapa
         base_cost = 1.0
 
         # Obtener costo de superficie si está disponible
-        if hasattr(mapa, 'get_surface_cost'):
-            base_cost = mapa.get_surface_cost(x, y)
+        base_cost = mapa.get_surface_weight(x, y)
 
         # Agregar modificador de clima
         weather_modifier = 0.0
-        if weather and hasattr(weather, 'current_multiplier'):
-            weather_mult = weather.current_multiplier
-            if weather_mult < 1.0:
-                # Mal clima aumenta el costo
-                weather_modifier = (1.0 - weather_mult) * 2.0
+        weather_mult = weather.current_multiplier
+        if weather_mult < 1.0:
+            # Mal clima aumenta el costo
+            weather_modifier = (1.0 - weather_mult) * 2.0
 
         return base_cost + weather_modifier
 

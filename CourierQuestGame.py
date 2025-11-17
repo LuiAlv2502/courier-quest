@@ -2,6 +2,7 @@ import pygame
 
 import api
 import constants
+
 from character import Character
 from job_loader import load_jobs
 from job_manager import JobManager
@@ -15,7 +16,7 @@ from AIController import AIController
 
 
 class CourierQuestGame:
-    def __init__(self, load_saved_game: bool = False, saved_game_state=None, use_plain_jobs: bool = False):
+    def __init__(self, load_saved_game: bool = False, saved_game_state=None, use_plain_jobs: bool = False, ai_difficulty: str = 'medium'):
         """Constructor principal del juego."""
         self.init_pygame()
         self.running = True
@@ -35,17 +36,25 @@ class CourierQuestGame:
         self.save_system = SaveData()
         self.use_plain_jobs = use_plain_jobs
 
+        # AI difficulty (easy/medium/hard)
+        self.ai_difficulty = ai_difficulty
+        self.ai_controller = None
+
         # AI movement timer variables
         self.ai_last_move_time = 0
-        self.ai_move_interval = 300 # Move every 1000ms (1 second)
+        self.ai_move_interval = 300
 
         if load_saved_game and saved_game_state is not None:
             self.load_resources(minimal=True)
             self.character = Character(0, 0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
             self.aiCharacter = Character(0, 0, tile_size=20, screen=self.screen, top_bar_height=constants.TOP_BAR_HEIGHT)
             self.restore_game_state(saved_game_state)
+            # Create AI controller once using chosen difficulty
+            self.ai_controller = AIController(dificulty=self.ai_difficulty, game=self)
         else:
             self.load_resources()
+            # Create AI controller once using chosen difficulty
+            self.ai_controller = AIController(dificulty=self.ai_difficulty, game=self)
 
     def init_pygame(self):
         pygame.init()
@@ -55,7 +64,7 @@ class CourierQuestGame:
         pygame.mixer.music.play(loops=-1)
         self.screen = pygame.display.set_mode((constants.WIDTH_SCREEN, constants.HEIGHT_SCREEN))
         pygame.display.set_caption("Courier Quest")
-        #api.api_request()
+        api.api_request()
 
     def pause_menu(self):
         self.tiempo_pausa_inicio = pygame.time.get_ticks()
@@ -108,7 +117,9 @@ class CourierQuestGame:
         components = self.save_system.extract_game_components(game_state)
         self._restore_game_data(components["game"])
         self._restore_character_data(components["character"])
+        self._restore_ai_character_data(components.get("ai_character", {}))
         self._restore_inventory_data(components.get("inventory", {}))
+        self._restore_ai_inventory_data(components.get("ai_inventory", {}))
         self._restore_job_manager_data(components.get("jobs", {}))
         self.pending_job = None
         print("Game state restored successfully")
@@ -121,6 +132,8 @@ class CourierQuestGame:
         self.show_inventory = game_data.get("show_inventory", False)
         self.show_job_decision = game_data.get("show_job_decision", False)
         self.job_decision_message = game_data.get("job_decision_message", "")
+        self.ai_difficulty = game_data.get("ai_difficulty", "medium")
+        self.ai_last_move_time = game_data.get("ai_last_move_time", 0)
         self._adjust_game_time()
 
     def _adjust_game_time(self):
@@ -157,6 +170,34 @@ class CourierQuestGame:
             self.character.inventory.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
         else:
             self.character.inventory.picked_jobs = [job for job in self.character.inventory.jobs if job.is_picked_up()]
+
+    def _restore_ai_character_data(self, ai_character_data):
+        self.aiCharacter.tile_x = ai_character_data.get("tile_x", 0)
+        self.aiCharacter.tile_y = ai_character_data.get("tile_y", 0)
+        self.aiCharacter.reputation = ai_character_data.get("reputacion", 70)
+        self.aiCharacter.resistencia = ai_character_data.get("resistencia", 100)
+        self.aiCharacter.total_weight = ai_character_data.get("peso_total", 0)
+        self.aiCharacter.score = ai_character_data.get("score", 0)
+        self.aiCharacter.deliveres_without_penalizacion = ai_character_data.get("entregas_sin_penalizacion", 0)
+        self.aiCharacter.streak_bonus_applied = ai_character_data.get("racha_bonus_aplicado", False)
+        self.aiCharacter.first_job_late_aplied = ai_character_data.get("primera_tardanza_aplicada", False)
+        self._update_ai_character_screen_position()
+
+    def _update_ai_character_screen_position(self):
+        self.aiCharacter.shape.center = (
+            self.aiCharacter.tile_x * self.aiCharacter.tile_size + self.aiCharacter.tile_size // 2,
+            self.aiCharacter.tile_y * self.aiCharacter.tile_size + self.aiCharacter.tile_size // 2 + self.aiCharacter.top_bar_height
+        )
+
+    def _restore_ai_inventory_data(self, ai_inventory_data):
+        from job import Job
+        jobs_data = ai_inventory_data.get("jobs", [])
+        picked_jobs_data = ai_inventory_data.get("picked_jobs", [])
+        self.aiCharacter.inventory.jobs = [Job.from_dict(j) for j in jobs_data]
+        if picked_jobs_data:
+            self.aiCharacter.inventory.picked_jobs = [Job.from_dict(j) for j in picked_jobs_data]
+        else:
+            self.aiCharacter.inventory.picked_jobs = [job for job in self.aiCharacter.inventory.jobs if job.is_picked_up()]
 
     def _restore_job_manager_data(self, job_data):
         pending_jobs = self._load_pending_jobs(job_data)
@@ -216,6 +257,7 @@ class CourierQuestGame:
     def create_current_game_state(self):
         return {
             "character": self.character.to_dict(),
+            "ai_character": self.aiCharacter.to_dict(),
             "game": {
                 "tiempo_juego_acumulado": self._get_elapsed_seconds() * 1000,
                 "tiempo_limite": self.tiempo_limite,
@@ -223,11 +265,17 @@ class CourierQuestGame:
                 "last_deadline_penalty": self.last_deadline_penalty,
                 "show_inventory": self.show_inventory,
                 "show_job_decision": self.show_job_decision,
-                "job_decision_message": self.job_decision_message
+                "job_decision_message": self.job_decision_message,
+                "ai_difficulty": self.ai_difficulty,
+                "ai_last_move_time": self.ai_last_move_time
             },
             "inventory": {
                 "jobs": [job.to_dict() for job in self.character.inventory.jobs],
                 "picked_jobs": [job.to_dict() for job in self.character.inventory.picked_jobs]
+            },
+            "ai_inventory": {
+                "jobs": [job.to_dict() for job in self.aiCharacter.inventory.jobs],
+                "picked_jobs": [job.to_dict() for job in self.aiCharacter.inventory.picked_jobs]
             },
             "jobs": {
                 "pending_jobs": [job.to_dict() for job in self.job_manager.get_pending_jobs()],
@@ -341,11 +389,13 @@ class CourierQuestGame:
 
                         
     def handle_ai_movement(self):
-        #use AIController to manage AI movement
-        ai_controller = AIController(dificulty="hard", game=self)
+        # Use the existing AIController instance to manage AI movement
+        if self.ai_controller is None:
+            # Fallback: create one with default difficulty
+            self.ai_controller = AIController(dificulty=self.ai_difficulty or "medium", game=self)
         current_time = pygame.time.get_ticks()
         if current_time - self.ai_last_move_time >= self.ai_move_interval:
-            dx, dy = ai_controller.manage_move(self.aiCharacter, self.weather,self.aiCharacter.inventory)
+            dx, dy = self.ai_controller.manage_move(self.aiCharacter, self.weather, self.aiCharacter.inventory)
             print(dx)
             print (dy)
             self.aiCharacter.movement(dx, dy, self.mapa, weather=self.weather)
@@ -436,15 +486,22 @@ class CourierQuestGame:
         # AI estático: sin movimiento
 
     def draw(self):
-        print(self.aiCharacter.inventory.picked_jobs)
+        #print(self.aiCharacter.inventory.picked_jobs)
+        print(self.aiCharacter.score)
         reputacion = self.character.reputation
         if self.character.score >= self.objetivo_valor:
             score_data = self.calculate_final_score()
             self.running = False
             self.hud.show_victory_with_final_score(score_data)
-        elif self.character.reputation < 20 or self._get_elapsed_seconds() >= self.tiempo_limite:
+        elif self.character.reputation < 20:
             self.running = False
-            self.hud.show_game_over(reason="Low reputation" if self.character.reputation < 20 else "Time is up")
+            self.hud.show_game_over(reason="Low reputation")
+        elif self._get_elapsed_seconds() >= self.tiempo_limite:
+            self.running = False
+            self.hud.show_game_over(reason="Time is up")
+        elif self.aiCharacter.score >= self.objetivo_valor:
+            self.running = False
+            self.hud.show_game_over(reason="HAHAHAHA YOU LOST TO AN AI")
         else:
             self.mapa.draw_map(self.screen)
             self.character.draw(self.screen)
